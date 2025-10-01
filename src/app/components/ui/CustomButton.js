@@ -1,6 +1,6 @@
 'use client';
 
-export default function CustomButton({ title, className = "" }) {
+export default function CustomButton({ title, className = "", onClick, ...props }) {
   return (
     <button
       className={`
@@ -23,6 +23,8 @@ export default function CustomButton({ title, className = "" }) {
         ${className}
       `}
       role="button"
+      onClick={onClick}
+      {...props}
     >
       <span className="relative z-10">{title || 'Button'}</span>
     </button>

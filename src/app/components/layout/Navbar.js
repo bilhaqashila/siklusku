@@ -31,12 +31,14 @@ export default function Navbar() {
     <nav className="w-full bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm relative">
       {/** Logo */}
       <div className="flex items-center gap-2">
-         <Image src="/image/LogoRisa.png" width={100} height={32} alt="RISA Logo"/>
+        <Link href="/">
+          <Image src="/image/LogoRisa.png" width={100} height={32} alt="RISA Logo"/>
+        </Link>
       </div>
 
       {/** Menu Desktop */}
       <ul className="hidden md:flex gap-6 text-gray-700 font-medium">
-        <li><Link href="/" className="hover:text-pink-500">Beranda</Link></li>
+        <li><Link href="/articles" className="hover:text-pink-500">Artikel</Link></li>
         <li><Link href="/mini-game" className="hover:text-pink-500">Mini Games</Link></li>
         <li><Link href="/siklusku" className="hover:text-pink-500">My Cycle</Link></li>
         <li><Link href="/vaksin-hpv" className="hover:text-pink-500">Vaksin HPV</Link></li>
@@ -45,7 +47,7 @@ export default function Navbar() {
       {/** Right Section */}
       <div className="flex items-center gap-4">
         {/** Search */}
-        <button aria-label="Cari" className="text-gray-600 hover:text-pink-500">
+        <button aria-label="Cari" className="text-gray-600 hover:text-pink-500 cursor-pointer">
           <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
@@ -60,7 +62,7 @@ export default function Navbar() {
         </button>
 
         {/** Mobile Toggle */}
-        <button id="menu-toggle" className="md:hidden text-gray-600 hover:text-pink-500">
+        <button id="menu-toggle" className="md:hidden text-gray-600 hover:text-pink-500 cursor-pointer">
           <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
