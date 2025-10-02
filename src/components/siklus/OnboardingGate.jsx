@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 import Image from "next/image";
 import { gsap } from "gsap";
-import COPY_ID from "@/lib/siklus/copy/id";
 
 const focusableSelectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 const illustrationSrc = "/image/calendar-teen.png";
@@ -82,7 +81,6 @@ export default function OnboardingGate({ open, onBelum, onSudah }) {
     return null;
   }
 
-  const copy = COPY_ID.onboarding.gate;
 
   function handleChoice(callback) {
     if (!containerRef.current) {
@@ -126,10 +124,10 @@ export default function OnboardingGate({ open, onBelum, onSudah }) {
             </span>
             <div>
               <h2 id="onboarding-title" className="text-3xl font-semibold text-slate-900">
-                {copy.title}
+                Apakah kamu sudah mengalami haid?
               </h2>
               <p id="onboarding-subtitle" className="mt-3 text-sm text-slate-600">
-                {copy.subtitle}
+                Bangun kebiasaan mencatat siklus menstruasimu disini!
               </p>
             </div>
             <ul className="flex flex-col gap-2 text-left text-sm text-slate-600">
@@ -139,29 +137,29 @@ export default function OnboardingGate({ open, onBelum, onSudah }) {
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-1 inline-flex h-2 w-2 rounded-full bg-pink-500" aria-hidden="true" />
-                <span>Dapatkan panduan sesuai kebutuhanmu saat ini.</span>
+                <span>Dapatkan informasi personal seputar kesehatan reproduksi.</span>
               </li>
             </ul>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
               <button
                 type="button"
                 role="button"
-                aria-label={copy.no}
+                aria-label="Belum pernah haid"
                 data-gate-button
                 className="inline-flex min-h-[52px] w-full items-center justify-center rounded-full bg-pink-500 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-pink-200/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-600 sm:flex-1"
                 onClick={() => handleChoice(onBelum)}
               >
-                {copy.no}
+                Belum
               </button>
               <button
                 type="button"
                 role="button"
-                aria-label={copy.yes}
+                aria-label="Sudah haid"
                 data-gate-button
                 className="inline-flex min-h-[52px] w-full items-center justify-center rounded-full border border-pink-200 bg-white px-6 py-3 text-base font-semibold text-pink-600 shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-600 sm:flex-1"
                 onClick={() => handleChoice(onSudah)}
               >
-                {copy.yes}
+                Sudah
               </button>
             </div>
             <p className="text-xs text-slate-500">

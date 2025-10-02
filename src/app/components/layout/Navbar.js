@@ -40,7 +40,7 @@ export default function Navbar() {
       <ul className="hidden md:flex gap-6 text-gray-700 font-medium">
         <li><Link href="/articles" className="hover:text-pink-500">Artikel</Link></li>
         <li><Link href="/mini-game" className="hover:text-pink-500">Mini Games</Link></li>
-        <li><Link href="/siklusku" className="hover:text-pink-500">My Cycle</Link></li>
+        <li><Link href="/siklusku" className="hover:text-pink-500">Siklusku</Link></li>
         <li><Link href="/vaksin-hpv" className="hover:text-pink-500">Vaksin HPV</Link></li>
       </ul>
 

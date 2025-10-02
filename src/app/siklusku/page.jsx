@@ -18,7 +18,6 @@ import {
 import { calculateMoodDistribution, summarizeMoodTrend } from "@/lib/siklus/mood";
 import { projectUpcomingPeriods } from "@/lib/siklus/cycleMath";
 import { DEFAULT_VALUES, STORAGE_KEYS } from "@/lib/siklus/localStore";
-import COPY_ID from "@/lib/siklus/copy/id";
 
 const PHASE_ART = {
   menstruation: {
@@ -30,7 +29,12 @@ const PHASE_ART = {
     gradientDark: "dark:from-rose-950 dark:via-slate-950 dark:to-slate-900",
     badge: "bg-rose-100 text-rose-600",
     badgeDark: "dark:bg-rose-900/40 dark:text-rose-200 dark:border dark:border-rose-800/50",
-    icon: Droplet
+    icon: Droplet,
+    name: "Menstruasi",
+    description: "Fase pembersihan alami tubuhmu",
+    tips: [
+      "Istirahat cukup dan konsumsi makanan bergizi. Tubuhmu sedang bekerja keras!"
+    ]
   },
   follicular: {
     image: {
@@ -41,7 +45,12 @@ const PHASE_ART = {
     gradientDark: "dark:from-emerald-950 dark:via-slate-950 dark:to-slate-900",
     badge: "bg-emerald-100 text-emerald-600",
     badgeDark: "dark:bg-emerald-900/40 dark:text-emerald-200 dark:border dark:border-emerald-800/50",
-    icon: Sprout
+    icon: Sprout,
+    name: "Folikuler",
+    description: "Masa pemulihan dan pertumbuhan sel baru",
+    tips: [
+      "Energi mulai meningkat! Waktu yang baik untuk olahraga ringan atau belajar hal baru."
+    ]
   },
   ovulation: {
     image: {
@@ -52,7 +61,13 @@ const PHASE_ART = {
     gradientDark: "dark:from-amber-950 dark:via-slate-950 dark:to-slate-900",
     badge: "bg-amber-100 text-amber-600",
     badgeDark: "dark:bg-amber-900/40 dark:text-amber-200 dark:border dark:border-amber-800/60",
-    icon: Sparkles
+    icon: Sparkles,
+    name: "Ovulasi",
+    description: "Sel telur sudah siap dibuahi, ini masa subur kamu.",
+    tips: [
+      "Puncak kesuburan, tetap jaga kesehatan."
+    ],
+    psaMessage: "Ovulasi = Masa Subur. Perempuan memiliki peluang kehamilan lebih tinggi di masa ini."
   },
   luteal: {
     image: {
@@ -63,7 +78,12 @@ const PHASE_ART = {
     gradientDark: "dark:from-indigo-950 dark:via-slate-950 dark:to-slate-900",
     badge: "bg-indigo-100 text-indigo-600",
     badgeDark: "dark:bg-indigo-900/40 dark:text-indigo-200 dark:border dark:border-indigo-800/50",
-    icon: Moon
+    icon: Moon,
+    name: "Luteal",
+    description: "Persiapan tubuh menuju menstruasi berikutnya",
+    tips: [
+      "Mungkin kamu merasa lebih lelah atau sensitif dari biasanya. Perbanyak istirahat dan merawat diri."
+    ]
   },
   unknown: {
     image: {
@@ -74,7 +94,10 @@ const PHASE_ART = {
     gradientDark: "dark:from-slate-900 dark:via-slate-950 dark:to-slate-900",
     badge: "bg-slate-200 text-slate-700",
     badgeDark: "dark:bg-slate-800/70 dark:text-slate-200 dark:border dark:border-slate-700/60",
-    icon: Sparkles
+    icon: Sparkles,
+    name: "Belum ada data",
+    description: "Data siklus lengkap bantu kami menyesuaikan tips khusus untukmu.",
+    tips: []
   }
 };
 
@@ -169,23 +192,24 @@ export default function SikluskuPage() {
 
   function renderPhaseHero() {
     const phaseMeta = PHASE_ART[cycleInsight.phaseKey] || PHASE_ART.unknown;
-    const copyPhase = COPY_ID.cycle.phases[cycleInsight.phaseKey];
-    const tips = COPY_ID.cycle.tips[cycleInsight.phaseKey] || [];
+    const tips = Array.isArray(phaseMeta.tips) ? phaseMeta.tips : [];
+    const phaseName = phaseMeta.name;
     const showTips = tips.length > 0;
 
     const headline = cycleInsight.day
-      ? COPY_ID.cycle.header.dayHeadline({ day: cycleInsight.day })
+      ? `Hari ke-${cycleInsight.day} siklusmu`
       : "Lengkapi data siklusmu untuk melihat insight pribadi.";
 
-    const subline = copyPhase
-      ? COPY_ID.cycle.header.phaseIntro({ phaseName: copyPhase.name })
+    const subline = phaseName
+      ? `Kamu sedang di fase ${phaseName}`
       : "Masukkan tanggal haid terakhirmu agar kami bisa memberi panduan harian.";
 
-    const description = copyPhase?.desc ?? "Data siklus lengkap bantu kami menyesuaikan tips khusus untukmu.";
+    const description = phaseMeta.description ?? "Data siklus lengkap bantu kami menyesuaikan tips khusus untukmu.";
 
     const Icon = phaseMeta.icon;
     const fertilityEnabled = Array.isArray(goals) && goals.includes("fertility");
-    const showPSA = cycleInsight.phaseKey === "ovulation";
+    const psaMessage = phaseMeta.psaMessage;
+    const showPSA = Boolean(psaMessage && cycleInsight.phaseKey === "ovulation");
     const psaClass = fertilityEnabled
       ? "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-800/60"
       : "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800/60 dark:text-slate-200 dark:border-slate-700/60";
@@ -193,13 +217,15 @@ export default function SikluskuPage() {
     return (
       <div className="space-y-6">
         <section
-          className={`overflow-hidden rounded-[32px] border border-white/40 bg-gradient-to-r ${phaseMeta.gradient} ${phaseMeta.gradientDark ?? ""} p-6 shadow-sm sm:p-8 dark:border-white/10`}
+          className={`overflow-hidden rounded-[32px] border border-white/40 bg-gradient-to-r ${phaseMeta.gradient} ${
+            phaseMeta.gradientDark ?? ""
+          } p-6 shadow-sm sm:p-8 dark:border-white/10`}
         >
           <div className="grid gap-6 md:grid-cols-[1.15fr_auto] md:items-center">
             <div className="space-y-5">
               <span className={`inline-flex items-center gap-2 rounded-full px-4 py-1 text-xs font-semibold uppercase tracking-wide ${phaseMeta.badge} ${phaseMeta.badgeDark ?? ""}`}>
                 <Icon className="h-4 w-4" aria-hidden="true" />
-                <span className="text-slate-900 dark:text-slate-100">{copyPhase?.name ?? "Belum ada data"}</span>
+                <span className="text-slate-900 dark:text-slate-100">{phaseName ?? "Belum ada data"}</span>
               </span>
               <div className="space-y-2 text-left">
                 <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100 sm:text-[34px]">
@@ -262,7 +288,7 @@ export default function SikluskuPage() {
               )}
               {showPSA ? (
                 <div className={`mt-4 rounded-2xl border px-4 py-3 text-sm font-medium ${psaClass}`}>
-                  {COPY_ID.cycle.tips.psaOvulation}
+                  {psaMessage}
                 </div>
               ) : null}
             </div>
