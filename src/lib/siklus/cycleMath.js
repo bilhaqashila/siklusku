@@ -1,14 +1,46 @@
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+function normalizeDate(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
 function toDate(value) {
   if (!value) {
     return null;
   }
   if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? null : value;
+    return normalizeDate(value);
   }
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+  if (typeof value === "string") {
+    const parts = value.split("-");
+    if (parts.length === 3) {
+      const [year, month, day] = parts.map((part) => Number.parseInt(part, 10));
+      if ([year, month, day].every((part) => Number.isFinite(part))) {
+        const date = new Date(year, month - 1, day);
+        return Number.isNaN(date.getTime()) ? null : normalizeDate(date);
+      }
+    }
+  }
+  return normalizeDate(value);
+}
+
+function normalizePositiveInteger(value, fallback) {
+  const numeric = Number.parseInt(value, 10);
+  if (Number.isFinite(numeric) && numeric > 0) {
+    return numeric;
+  }
+  return fallback;
+}
+
+function formatDateLocal(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return [year, month, day].join("-");
 }
 
 function diffInDays(start, end) {
@@ -17,51 +49,78 @@ function diffInDays(start, end) {
   if (!startDate || !endDate) {
     return null;
   }
-  const diff = Math.floor((endDate.getTime() - startDate.getTime()) / MS_PER_DAY);
-  return diff;
+  return Math.floor((endDate.getTime() - startDate.getTime()) / MS_PER_DAY);
 }
 
-export function getCycleDay(referenceDate, lastPeriodStart) {
+export function cycleDay(referenceDate, lastPeriodStart, cycleLength = 28) {
   const start = toDate(lastPeriodStart);
-  const ref = toDate(referenceDate) || new Date();
-  if (!start) {
+  const today = toDate(referenceDate) || toDate(new Date());
+  const normalizedCycleLength = normalizePositiveInteger(cycleLength, 28);
+
+  if (!start || !today || !normalizedCycleLength) {
     return null;
   }
-  const diff = diffInDays(start, ref);
-  if (diff === null || diff < 0) {
+
+  const diff = Math.floor((today.getTime() - start.getTime()) / MS_PER_DAY);
+  if (!Number.isFinite(diff)) {
     return null;
   }
-  return diff + 1;
+
+  const modulo = ((diff % normalizedCycleLength) + normalizedCycleLength) % normalizedCycleLength;
+  return modulo + 1;
 }
 
-export function calculatePhase(cycleDay, periodLength = 5, cycleLength = 28) {
-  if (!cycleDay) {
+export function getCycleDay(referenceDate, lastPeriodStart, cycleLength) {
+  return cycleDay(referenceDate, lastPeriodStart, cycleLength);
+}
+
+export function ovulationDay(cycleLength = 28) {
+  const normalizedCycleLength = normalizePositiveInteger(cycleLength, 28);
+  return Math.max(1, normalizedCycleLength - 14);
+}
+
+export function calculatePhase(cycleDayValue, periodLength = 5, cycleLength = 28) {
+  const normalizedCycleLength = normalizePositiveInteger(cycleLength, 28);
+  const normalizedPeriodLength = Math.min(
+    normalizedCycleLength,
+    Math.max(1, normalizePositiveInteger(periodLength, 5))
+  );
+
+  if (!cycleDayValue) {
     return "unknown";
   }
-  if (cycleDay <= periodLength) {
+
+  const day = ((Math.round(cycleDayValue) - 1 + normalizedCycleLength) % normalizedCycleLength) + 1;
+
+  if (day <= normalizedPeriodLength) {
     return "menstruation";
   }
-  const ovulationWindowStart = Math.max(periodLength + 1, Math.floor(cycleLength * 0.45));
-  const ovulationWindowEnd = ovulationWindowStart + 2;
-  if (cycleDay >= ovulationWindowStart && cycleDay <= ovulationWindowEnd) {
+
+  const ovulationStart = Math.min(
+    normalizedCycleLength,
+    Math.max(normalizedPeriodLength + 1, ovulationDay(normalizedCycleLength))
+  );
+  const ovulationEnd = Math.min(normalizedCycleLength, ovulationStart + 1);
+
+  if (day >= ovulationStart && day <= ovulationEnd) {
     return "ovulation";
   }
-  if (cycleDay < ovulationWindowStart) {
+
+  if (day < ovulationStart) {
     return "follicular";
   }
-  if (cycleDay <= cycleLength) {
-    return "luteal";
-  }
-  return "unknown";
+
+  return "luteal";
 }
 
 export function predictNextPeriod(lastPeriodStart, cycleLength = 28) {
   const start = toDate(lastPeriodStart);
+  const normalizedCycleLength = normalizePositiveInteger(cycleLength, 28);
   if (!start) {
     return null;
   }
-  const next = new Date(start.getTime() + cycleLength * MS_PER_DAY);
-  return next.toISOString().slice(0, 10);
+  const next = new Date(start.getTime() + normalizedCycleLength * MS_PER_DAY);
+  return formatDateLocal(next);
 }
 
 export function calculatePeriodLength(start, end) {
@@ -142,16 +201,23 @@ export function buildCycleTimeline({
   periodLength = 5
 } = {}) {
   const start = toDate(lastPeriodStart);
+  const normalizedCycleLength = normalizePositiveInteger(cycleLength, 28);
+  const normalizedPeriodLength = Math.min(
+    normalizedCycleLength,
+    Math.max(1, normalizePositiveInteger(periodLength, 5))
+  );
+
   if (!start) {
     return [];
   }
+
   const timeline = [];
-  for (let day = 1; day <= cycleLength; day += 1) {
+  for (let day = 1; day <= normalizedCycleLength; day += 1) {
     const date = new Date(start.getTime() + (day - 1) * MS_PER_DAY);
     timeline.push({
       day,
-      date: date.toISOString().slice(0, 10),
-      phase: calculatePhase(day, periodLength, cycleLength)
+      date: formatDateLocal(date),
+      phase: calculatePhase(day, normalizedPeriodLength, normalizedCycleLength)
     });
   }
   return timeline;
@@ -163,12 +229,13 @@ export function projectUpcomingPeriods({
   cycleLength = 28
 } = {}) {
   const start = toDate(lastPeriodStart);
+  const normalizedCycleLength = normalizePositiveInteger(cycleLength, 28);
   if (!start) {
     return [];
   }
   return Array.from({ length: cyclesToProject }, (_, index) => {
-    const projection = new Date(start.getTime() + (index + 1) * cycleLength * MS_PER_DAY);
-    return projection.toISOString().slice(0, 10);
+    const projection = new Date(start.getTime() + (index + 1) * normalizedCycleLength * MS_PER_DAY);
+    return formatDateLocal(projection);
   });
 }
 

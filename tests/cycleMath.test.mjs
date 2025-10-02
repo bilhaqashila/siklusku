@@ -2,7 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  cycleDay,
   getCycleDay,
+  ovulationDay,
   calculatePhase,
   predictNextPeriod,
   calculateCycleSummary,
@@ -10,18 +12,38 @@ import {
   projectUpcomingPeriods
 } from "../src/lib/siklus/cycleMath.js";
 
-test("getCycleDay returns null without start date", () => {
-  assert.equal(getCycleDay(new Date(), null), null);
+test("cycleDay returns null without start date", () => {
+  assert.equal(cycleDay(new Date(), null), null);
 });
 
-test("getCycleDay calculates day difference", () => {
+test("cycleDay wraps beyond cycle length using modulo", () => {
+  const start = "2025-01-01";
+  const reference = new Date("2025-02-10");
+  // diff 40 days -> with cycle length 28 should yield day 13
+  assert.equal(cycleDay(reference, start, 28), 13);
+});
+
+test("cycleDay handles future start dates by normalizing", () => {
+  const today = new Date("2025-02-01");
+  const futureStart = "2025-02-05";
+  assert.equal(cycleDay(today, futureStart, 28), 25);
+});
+
+test("getCycleDay forwards to cycleDay", () => {
   const today = new Date("2025-02-10");
-  assert.equal(getCycleDay(today, "2025-02-05"), 6);
+  assert.equal(getCycleDay(today, "2025-02-05"), cycleDay(today, "2025-02-05"));
 });
 
-test("calculatePhase follows ranges", () => {
+test("ovulationDay defaults to cycleLength minus 14", () => {
+  assert.equal(ovulationDay(32), 18);
+  assert.equal(ovulationDay(), 14);
+});
+
+test("calculatePhase respects menstrual and ovulation windows", () => {
   assert.equal(calculatePhase(2, 5, 28), "menstruation");
-  assert.equal(calculatePhase(8, 5, 28), "follicular");
+  assert.equal(calculatePhase(7, 5, 28), "follicular");
+  assert.equal(calculatePhase(14, 5, 28), "ovulation");
+  assert.equal(calculatePhase(16, 5, 28), "luteal");
 });
 
 test("predictNextPeriod adds cycle length", () => {
@@ -43,15 +65,15 @@ test("calculateCycleSummary averages provided periods", () => {
   assert.equal(summary.averageCycleLength, 29);
 });
 
-test("buildCycleTimeline returns per-day entries", () => {
+test("buildCycleTimeline normalizes phases", () => {
   const timeline = buildCycleTimeline({
     lastPeriodStart: "2025-01-01",
-    cycleLength: 5,
+    cycleLength: 6,
     periodLength: 2
   });
-  assert.equal(timeline.length, 5);
-  assert.equal(timeline[0].day, 1);
+  assert.equal(timeline.length, 6);
   assert.equal(timeline[0].phase, "menstruation");
+  assert.equal(timeline[3].phase, "ovulation");
 });
 
 test("projectUpcomingPeriods lists future cycles", () => {
@@ -63,5 +85,3 @@ test("projectUpcomingPeriods lists future cycles", () => {
   assert.equal(projections.length, 2);
   assert.equal(projections[0], "2025-01-29");
 });
-
-
