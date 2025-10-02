@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { create } from "zustand";
 import {
@@ -12,12 +12,14 @@ import { calculateCycleSummary } from "@/lib/siklus/cycleMath";
 import { normalizeMoodEntry } from "@/lib/siklus/mood";
 
 const defaultOnboarding = DEFAULT_VALUES[STORAGE_KEYS.onboardingData];
+const defaultGoals = DEFAULT_VALUES[STORAGE_KEYS.goals];
 
 const useSiklusStore = create((set, get) => ({
   hydrated: false,
   onboardingCompleted: DEFAULT_VALUES[STORAGE_KEYS.onboardingCompleted],
   onboardingData: { ...defaultOnboarding },
   moodLogs: DEFAULT_VALUES[STORAGE_KEYS.moodLogs],
+  goals: [...defaultGoals],
   cycleSummary: calculateCycleSummary(),
   activeView: "dashboard",
 
@@ -28,6 +30,7 @@ const useSiklusStore = create((set, get) => ({
     const onboardingCompleted = getLocalValue(STORAGE_KEYS.onboardingCompleted);
     const onboardingData = getLocalValue(STORAGE_KEYS.onboardingData);
     const moodLogs = getLocalValue(STORAGE_KEYS.moodLogs).map((entry) => normalizeMoodEntry(entry));
+    const goals = getLocalValue(STORAGE_KEYS.goals);
     const cycleSummary = calculateCycleSummary([
       {
         start: onboardingData.lastPeriodStart,
@@ -40,6 +43,7 @@ const useSiklusStore = create((set, get) => ({
       onboardingCompleted,
       onboardingData,
       moodLogs,
+      goals,
       cycleSummary
     });
   },
@@ -75,6 +79,12 @@ const useSiklusStore = create((set, get) => ({
     const normalized = logs.map((log) => normalizeMoodEntry(log));
     setLocalValue(STORAGE_KEYS.moodLogs, normalized);
     set({ moodLogs: normalized });
+  },
+
+  setGoals: (nextGoals) => {
+    const value = Array.isArray(nextGoals) ? nextGoals : [];
+    setLocalValue(STORAGE_KEYS.goals, value);
+    set({ goals: value });
   }
 }));
 

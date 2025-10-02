@@ -20,7 +20,7 @@ export default function OnboardingGate({ open, onBelum, onSudah }) {
     const overlay = containerRef.current;
     const panel = overlay.querySelector(".gate-panel");
 
-    const ctx = gsap.context(() => {
+    const ctx = gsap.context((gsapContext) => {
       gsap.set(overlay, { autoAlpha: 0 });
       gsap.set(panel, { autoAlpha: 0, scale: 0.92, y: 24 });
 
@@ -42,7 +42,7 @@ export default function OnboardingGate({ open, onBelum, onSudah }) {
         button.addEventListener("pointerleave", handleLeave);
         button.addEventListener("pointercancel", handleLeave);
 
-        ctx.add(() => {
+        gsapContext.add(() => {
           button.removeEventListener("pointerenter", handleEnter);
           button.removeEventListener("pointerleave", handleLeave);
           button.removeEventListener("pointercancel", handleLeave);
@@ -148,7 +148,7 @@ export default function OnboardingGate({ open, onBelum, onSudah }) {
                 role="button"
                 aria-label={copy.no}
                 data-gate-button
-                className="w-full rounded-full bg-pink-500 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-pink-200/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-600"
+                className="inline-flex min-h-[52px] w-full items-center justify-center rounded-full bg-pink-500 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-pink-200/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-600 sm:flex-1"
                 onClick={() => handleChoice(onBelum)}
               >
                 {copy.no}
@@ -158,7 +158,7 @@ export default function OnboardingGate({ open, onBelum, onSudah }) {
                 role="button"
                 aria-label={copy.yes}
                 data-gate-button
-                className="w-full rounded-full border border-pink-200 bg-white px-6 py-3 text-base font-semibold text-pink-600 shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-600"
+                className="inline-flex min-h-[52px] w-full items-center justify-center rounded-full border border-pink-200 bg-white px-6 py-3 text-base font-semibold text-pink-600 shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-600 sm:flex-1"
                 onClick={() => handleChoice(onSudah)}
               >
                 {copy.yes}
@@ -169,7 +169,7 @@ export default function OnboardingGate({ open, onBelum, onSudah }) {
             </p>
           </div>
           <div className="relative hidden justify-center sm:flex">
-                        <div className="relative h-64 w-64">
+            <div className="relative h-64 w-64">
               <Image
                 src={welcomeCardSrc}
                 alt="Pesan sambutan Siklusku"

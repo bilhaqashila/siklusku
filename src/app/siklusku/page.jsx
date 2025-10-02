@@ -1,17 +1,92 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
+import { Droplet, Moon, Sparkles, Sprout } from "lucide-react";
 import OnboardingGate from "@/components/siklus/OnboardingGate";
 import FirstPeriodGuide from "@/components/siklus/FirstPeriodGuide";
 import CycleOnboarding from "@/components/siklus/CycleOnboarding";
 import MoodPieChart from "@/components/siklus/charts/MoodPieChart";
 import CycleTrendChart from "@/components/siklus/charts/CycleTrendChart";
 import ChartExportButton from "@/components/siklus/charts/ChartExportButton";
-import { shallow } from "zustand/shallow"; 
+import { shallow } from "zustand/shallow";
 import useSiklusStore from "@/stores/useSiklusStore";
+import {
+  cycleDay,
+  calculatePhase
+} from "@/lib/siklus/cycleMath";
 import { calculateMoodDistribution, summarizeMoodTrend } from "@/lib/siklus/mood";
 import { projectUpcomingPeriods } from "@/lib/siklus/cycleMath";
 import { DEFAULT_VALUES, STORAGE_KEYS } from "@/lib/siklus/localStore";
+import COPY_ID from "@/lib/siklus/copy/id";
+
+const PHASE_ART = {
+  menstruation: {
+    image: {
+      src: "/image/Teen%20Girl%20With%20Hot%20Tea%20(Menstrual%20Phase%20Illustration).png",
+      alt: "Ilustrasi remaja minum teh hangat untuk fase menstruasi"
+    },
+    gradient: "from-rose-100 via-white to-rose-50",
+    gradientDark: "dark:from-rose-950 dark:via-slate-950 dark:to-slate-900",
+    badge: "bg-rose-100 text-rose-600",
+    badgeDark: "dark:bg-rose-900/40 dark:text-rose-200 dark:border dark:border-rose-800/50",
+    icon: Droplet
+  },
+  follicular: {
+    image: {
+      src: "/image/Teen%20Girl%20With%20Flower%20(Follicular%20Phase%20Illustration).png",
+      alt: "Ilustrasi remaja membawa bunga"
+    },
+    gradient: "from-green-100 via-white to-emerald-50",
+    gradientDark: "dark:from-emerald-950 dark:via-slate-950 dark:to-slate-900",
+    badge: "bg-emerald-100 text-emerald-600",
+    badgeDark: "dark:bg-emerald-900/40 dark:text-emerald-200 dark:border dark:border-emerald-800/50",
+    icon: Sprout
+  },
+  ovulation: {
+    image: {
+      src: "/image/Teen%20Girl%20With%20Blossom%20(Ovulation%20Phase%20Illustration).png",
+      alt: "Ilustrasi remaja dengan bunga bermekaran"
+    },
+    gradient: "from-amber-100 via-white to-yellow-50",
+    gradientDark: "dark:from-amber-950 dark:via-slate-950 dark:to-slate-900",
+    badge: "bg-amber-100 text-amber-600",
+    badgeDark: "dark:bg-amber-900/40 dark:text-amber-200 dark:border dark:border-amber-800/60",
+    icon: Sparkles
+  },
+  luteal: {
+    image: {
+      src: "/image/Teen%20Girl%20With%20Moon%20(Luteal%20Phase%20Illustration).png",
+      alt: "Ilustrasi remaja dengan bulan sabit"
+    },
+    gradient: "from-indigo-100 via-white to-slate-50",
+    gradientDark: "dark:from-indigo-950 dark:via-slate-950 dark:to-slate-900",
+    badge: "bg-indigo-100 text-indigo-600",
+    badgeDark: "dark:bg-indigo-900/40 dark:text-indigo-200 dark:border dark:border-indigo-800/50",
+    icon: Moon
+  },
+  unknown: {
+    image: {
+      src: "/image/Teen%20Girl%20Pointing%20at%20Calendar%20(Cycle%20Tracker%20%20Calendar%20Widget).png",
+      alt: "Ilustrasi remaja menunjuk kalender"
+    },
+    gradient: "from-slate-100 via-white to-slate-50",
+    gradientDark: "dark:from-slate-900 dark:via-slate-950 dark:to-slate-900",
+    badge: "bg-slate-200 text-slate-700",
+    badgeDark: "dark:bg-slate-800/70 dark:text-slate-200 dark:border dark:border-slate-700/60",
+    icon: Sparkles
+  }
+};
+
+const SUPPORT_IMAGE = "/image/Teen%20Girl%20Hugging%20Friend%20(Support%20Banner%20Illustration).png";
+
+function normalizeNumber(value, fallback) {
+  const numeric = Number.parseInt(value, 10);
+  if (Number.isFinite(numeric) && numeric > 0) {
+    return numeric;
+  }
+  return fallback;
+}
 
 export default function SikluskuPage() {
   const siklusState = useSiklusStore((state) => state, shallow);
@@ -21,6 +96,7 @@ export default function SikluskuPage() {
     onboardingCompleted,
     onboardingData,
     moodLogs,
+    goals,
     cycleSummary,
     setOnboardingCompleted,
     updateOnboardingData
@@ -50,6 +126,36 @@ export default function SikluskuPage() {
     });
   }, [onboardingData.lastPeriodStart, onboardingData.cycleLength]);
 
+  const cycleInsight = useMemo(() => {
+    const hasData = Boolean(onboardingData.lastPeriodStart);
+    const regularity = onboardingData.regularity;
+
+    const safeCycleLength =
+      regularity === "not-sure"
+        ? 28
+        : normalizeNumber(onboardingData.cycleLength, 28);
+
+    const safePeriodLength =
+      regularity === "not-sure"
+        ? 5
+        : normalizeNumber(onboardingData.periodLength, 5);
+
+    const day = hasData
+      ? cycleDay(new Date(), onboardingData.lastPeriodStart, safeCycleLength)
+      : null;
+    const phaseKey = day
+      ? calculatePhase(day, safePeriodLength, safeCycleLength)
+      : "unknown";
+
+    return {
+      hasData,
+      day,
+      phaseKey,
+      cycleLength: safeCycleLength,
+      periodLength: safePeriodLength
+    };
+  }, [onboardingData]);
+
   function handleGuideComplete() {
     setOnboardingCompleted(true);
     updateOnboardingData(DEFAULT_VALUES[STORAGE_KEYS.onboardingData]);
@@ -61,38 +167,147 @@ export default function SikluskuPage() {
     setFlow("dashboard");
   }
 
+  function renderPhaseHero() {
+    const phaseMeta = PHASE_ART[cycleInsight.phaseKey] || PHASE_ART.unknown;
+    const copyPhase = COPY_ID.cycle.phases[cycleInsight.phaseKey];
+    const tips = COPY_ID.cycle.tips[cycleInsight.phaseKey] || [];
+    const showTips = tips.length > 0;
+
+    const headline = cycleInsight.day
+      ? COPY_ID.cycle.header.dayHeadline({ day: cycleInsight.day })
+      : "Lengkapi data siklusmu untuk melihat insight pribadi.";
+
+    const subline = copyPhase
+      ? COPY_ID.cycle.header.phaseIntro({ phaseName: copyPhase.name })
+      : "Masukkan tanggal haid terakhirmu agar kami bisa memberi panduan harian.";
+
+    const description = copyPhase?.desc ?? "Data siklus lengkap bantu kami menyesuaikan tips khusus untukmu.";
+
+    const Icon = phaseMeta.icon;
+    const fertilityEnabled = Array.isArray(goals) && goals.includes("fertility");
+    const showPSA = cycleInsight.phaseKey === "ovulation";
+    const psaClass = fertilityEnabled
+      ? "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-800/60"
+      : "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800/60 dark:text-slate-200 dark:border-slate-700/60";
+
+    return (
+      <div className="space-y-6">
+        <section
+          className={`overflow-hidden rounded-[32px] border border-white/40 bg-gradient-to-r ${phaseMeta.gradient} ${phaseMeta.gradientDark ?? ""} p-6 shadow-sm sm:p-8 dark:border-white/10`}
+        >
+          <div className="grid gap-6 md:grid-cols-[1.15fr_auto] md:items-center">
+            <div className="space-y-5">
+              <span className={`inline-flex items-center gap-2 rounded-full px-4 py-1 text-xs font-semibold uppercase tracking-wide ${phaseMeta.badge} ${phaseMeta.badgeDark ?? ""}`}>
+                <Icon className="h-4 w-4" aria-hidden="true" />
+                <span className="text-slate-900 dark:text-slate-100">{copyPhase?.name ?? "Belum ada data"}</span>
+              </span>
+              <div className="space-y-2 text-left">
+                <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100 sm:text-[34px]">
+                  {headline}
+                </h1>
+                <p className="text-sm text-slate-600 dark:text-slate-300">{subline}</p>
+              </div>
+              <p className="text-sm text-slate-600 dark:text-slate-300">{description}</p>
+              <dl className="grid grid-cols-2 gap-4 text-left sm:max-w-sm">
+                <div>
+                  <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Panjang siklus</dt>
+                  <dd className="text-lg font-semibold text-slate-900 dark:text-slate-100">{cycleInsight.cycleLength} hari</dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Lama menstruasi</dt>
+                  <dd className="text-lg font-semibold text-slate-900 dark:text-slate-100">{cycleInsight.periodLength} hari</dd>
+                </div>
+              </dl>
+              {!cycleInsight.day ? (
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center rounded-full bg-pink-500 px-5 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-600"
+                  onClick={() => setFlow("form")}
+                >
+                  Isi data siklus sekarang
+                </button>
+              ) : null}
+            </div>
+            <div className="relative hidden h-64 w-64 md:block">
+              <div className="absolute inset-0 rounded-full bg-white/70 blur-3xl dark:bg-white/10" aria-hidden="true" />
+              <Image
+                src={phaseMeta.image.src}
+                alt={phaseMeta.image.alt}
+                fill
+                sizes="(max-width: 1024px) 220px, 256px"
+                className="rounded-[28px] object-cover shadow-lg"
+                priority
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-[28px] border border-pink-100 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-700/60 dark:bg-slate-900">
+          <div className="grid gap-6 md:grid-cols-[1.2fr_0.8fr] md:items-center">
+            <div className="space-y-4 text-left">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Tips lembut untuk hari ini</h2>
+              {showTips ? (
+                <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-200">
+                  {tips.map((tip) => (
+                    <li key={tip} className="flex items-start gap-3">
+                      <span className="mt-1 inline-flex h-2.5 w-2.5 flex-shrink-0 rounded-full bg-pink-400 dark:bg-pink-300" aria-hidden="true" />
+                      <span>{tip}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Masukkan data haid terakhirmu dan kami akan menyiapkan panduan harian yang cocok untukmu.
+                </p>
+              )}
+              {showPSA ? (
+                <div className={`mt-4 rounded-2xl border px-4 py-3 text-sm font-medium ${psaClass}`}>
+                  {COPY_ID.cycle.tips.psaOvulation}
+                </div>
+              ) : null}
+            </div>
+            <div className="relative hidden overflow-hidden rounded-3xl bg-pink-50 dark:bg-slate-800 md:flex">
+              <Image
+                src={SUPPORT_IMAGE}
+                alt="Ilustrasi teman saling mendukung"
+                fill
+                sizes="(max-width: 1024px) 220px, 280px"
+                className="object-cover"
+              />
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   function renderDashboard() {
     return (
       <div className="space-y-8">
-        <section className="rounded-3xl bg-gradient-to-r from-pink-100 via-white to-pink-50 p-6 shadow-sm">
-          <h1 className="text-3xl font-semibold text-slate-800">Halo, ini ringkasan siklusmu ??</h1>
-          <p className="mt-2 text-sm text-slate-600">
-            Simak titik penting dari catatanmu. Kamu bisa update detail kapan saja lewat pengaturan.
-          </p>
-        </section>
+        {renderPhaseHero()}
 
         <section className="grid gap-4 md:grid-cols-3">
-          <article className="rounded-2xl border border-pink-100 bg-white p-5 shadow-sm">
-            <h3 className="text-sm font-medium text-slate-500">Rata-rata siklus</h3>
-            <p className="mt-2 text-3xl font-semibold text-slate-800">{cycleSummary.averageCycleLength} hari</p>
+          <article className="rounded-2xl border border-pink-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Rata-rata siklus</h3>
+            <p className="mt-2 text-3xl font-semibold text-slate-800 dark:text-slate-100">{cycleSummary.averageCycleLength} hari</p>
           </article>
-          <article className="rounded-2xl border border-pink-100 bg-white p-5 shadow-sm">
-            <h3 className="text-sm font-medium text-slate-500">Rata-rata menstruasi</h3>
-            <p className="mt-2 text-3xl font-semibold text-slate-800">{cycleSummary.averagePeriodLength} hari</p>
+          <article className="rounded-2xl border border-pink-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Rata-rata menstruasi</h3>
+            <p className="mt-2 text-3xl font-semibold text-slate-800 dark:text-slate-100">{cycleSummary.averagePeriodLength} hari</p>
           </article>
-          <article className="rounded-2xl border border-pink-100 bg-white p-5 shadow-sm">
-            <h3 className="text-sm font-medium text-slate-500">Mood dominan</h3>
-            <p className="mt-2 text-3xl font-semibold capitalize text-slate-800">{moodSummary.dominantMood}</p>
+          <article className="rounded-2xl border border-pink-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Mood dominan</h3>
+            <p className="mt-2 text-3xl font-semibold capitalize text-slate-800 dark:text-slate-100">{moodSummary.dominantMood}</p>
           </article>
         </section>
 
         <section className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-slate-800">Mood 30 hari terakhir</h3>
+          <div className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Mood 30 hari terakhir</h3>
             <MoodPieChart data={moodDistribution} />
           </div>
-          <div className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-slate-800">Tren panjang siklus</h3>
+          <div className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Tren panjang siklus</h3>
             <CycleTrendChart
               points={[
                 {
@@ -104,8 +319,8 @@ export default function SikluskuPage() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-slate-800">Periode berikutnya</h3>
+        <section className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Periode berikutnya</h3>
           {upcomingPeriods.length ? (
             <ul className="mt-3 space-y-2 text-sm text-slate-600">
               {upcomingPeriods.map((date) => (
@@ -116,14 +331,14 @@ export default function SikluskuPage() {
               ))}
             </ul>
           ) : (
-            <p className="mt-2 text-sm text-slate-500">Lengkapi data onboarding untuk dapat prediksi periode berikutnya.</p>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Lengkapi data onboarding untuk dapat prediksi periode berikutnya.</p>
           )}
         </section>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-pink-100 bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div>
-            <h3 className="text-lg font-semibold text-slate-800">Simpan ringkasanmu</h3>
-            <p className="text-sm text-slate-500">Unduh versi PNG untuk disimpan pribadi atau kirim ke seseorang yang kamu percaya.</p>
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Simpan ringkasanmu</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Unduh versi PNG untuk disimpan pribadi atau kirim ke seseorang yang kamu percaya.</p>
           </div>
           <ChartExportButton
             stats={{
@@ -139,7 +354,7 @@ export default function SikluskuPage() {
   }
 
   return (
-    <main className="container mx-auto max-w-4xl space-y-8 px-4 py-10">
+    <main className="container mx-auto max-w-4xl space-y-8 px-4 py-10 dark:text-slate-100">
       <OnboardingGate
         open={flow === "gate"}
         onBelum={() => setFlow("guide")}
@@ -156,6 +371,3 @@ export default function SikluskuPage() {
     </main>
   );
 }
-
-
-
