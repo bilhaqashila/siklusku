@@ -5,15 +5,12 @@ import MoodPieChart from "@/components/siklus/charts/MoodPieChart";
 import CycleTrendChart from "@/components/siklus/charts/CycleTrendChart";
 import ChartExportButton from "@/components/siklus/charts/ChartExportButton";
 import useSiklusStore from "@/stores/useSiklusStore";
+import { shallow } from "zustand/shallow";
 import { calculateMoodDistribution, summarizeMoodTrend } from "@/lib/siklus/mood";
 
 export default function SikluskuReportPage() {
-  const { hydrate, hydrated, moodLogs, cycleSummary } = useSiklusStore((state) => ({
-    hydrate: state.hydrate,
-    hydrated: state.hydrated,
-    moodLogs: state.moodLogs,
-    cycleSummary: state.cycleSummary
-  }));
+  const siklusState = useSiklusStore((state) => state, shallow);
+  const { hydrate, hydrated, moodLogs, cycleSummary } = siklusState;
 
   useEffect(() => {
     hydrate();
@@ -91,3 +88,5 @@ export default function SikluskuReportPage() {
     </main>
   );
 }
+
+

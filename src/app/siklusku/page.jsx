@@ -7,12 +7,14 @@ import CycleOnboarding from "@/components/siklus/CycleOnboarding";
 import MoodPieChart from "@/components/siklus/charts/MoodPieChart";
 import CycleTrendChart from "@/components/siklus/charts/CycleTrendChart";
 import ChartExportButton from "@/components/siklus/charts/ChartExportButton";
+import { shallow } from "zustand/shallow"; 
 import useSiklusStore from "@/stores/useSiklusStore";
 import { calculateMoodDistribution, summarizeMoodTrend } from "@/lib/siklus/mood";
 import { projectUpcomingPeriods } from "@/lib/siklus/cycleMath";
 import { DEFAULT_VALUES, STORAGE_KEYS } from "@/lib/siklus/localStore";
 
 export default function SikluskuPage() {
+  const siklusState = useSiklusStore((state) => state, shallow);
   const {
     hydrated,
     hydrate,
@@ -22,17 +24,7 @@ export default function SikluskuPage() {
     cycleSummary,
     setOnboardingCompleted,
     updateOnboardingData
-  } = useSiklusStore((state) => ({
-    hydrated: state.hydrated,
-    hydrate: state.hydrate,
-    onboardingCompleted: state.onboardingCompleted,
-    onboardingData: state.onboardingData,
-    moodLogs: state.moodLogs,
-    cycleSummary: state.cycleSummary,
-    setOnboardingCompleted: state.setOnboardingCompleted,
-    updateOnboardingData: state.updateOnboardingData
-  }));
-
+  } = siklusState;
   const [flow, setFlow] = useState("loading");
 
   useEffect(() => {
@@ -164,4 +156,6 @@ export default function SikluskuPage() {
     </main>
   );
 }
+
+
 

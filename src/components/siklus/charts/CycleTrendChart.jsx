@@ -32,7 +32,6 @@ export default function CycleTrendChart({ points = [], width = 320, height = 200
 
     return {
       path,
-      xLabels: points.map((point) => ({ label: point.label, x: point.label })),
       yTicks,
       plotWidth,
       plotHeight,
@@ -46,12 +45,19 @@ export default function CycleTrendChart({ points = [], width = 320, height = 200
       <svg width={width} height={height} role="img">
         <title>Tren panjang siklus</title>
         <desc>Grafik garis yang menampilkan perubahan panjang siklus haid per bulan.</desc>
-        <rect x="40" y="10" width={computed.plotWidth || width - 60} height={computed.plotHeight || height - 40} fill="#fff7fb" stroke="#fce7f3" />
-        {computed.yTicks.map((tick) => {
+        <rect
+          x="40"
+          y="10"
+          width={computed.plotWidth || width - 60}
+          height={computed.plotHeight || height - 40}
+          fill="#fff7fb"
+          stroke="#fce7f3"
+        />
+        {computed.yTicks.map((tick, index) => {
           const ratio = (tick - computed.minValue) / ((computed.maxValue - computed.minValue) || 1);
           const y = 10 + (computed.plotHeight || height - 40) * (1 - ratio);
           return (
-            <g key={tick}>
+            <g key={`tick-${tick}-${index}`}>
               <line x1="40" x2={width - 20} y1={y} y2={y} stroke="#fce7f3" strokeDasharray="4 4" />
               <text x="32" y={y + 4} textAnchor="end" fontSize="10" fill="#64748b">
                 {tick}
@@ -65,7 +71,7 @@ export default function CycleTrendChart({ points = [], width = 320, height = 200
           const ratio = (point.value - computed.minValue) / ((computed.maxValue - computed.minValue) || 1);
           const y = 10 + (computed.plotHeight || height - 40) * (1 - ratio);
           return (
-            <g key={point.label}>
+            <g key={`${point.label}-${index}`}>
               <circle cx={x} cy={y} r="4" fill="#ec4899">
                 <title>
                   {point.label}: {point.value} hari
@@ -77,7 +83,7 @@ export default function CycleTrendChart({ points = [], width = 320, height = 200
         {points.map((point, index) => {
           const x = 40 + (computed.plotWidth || width - 60) / Math.max(points.length - 1, 1) * index;
           return (
-            <text key={`${point.label}-label`} x={x} y={height - 5} textAnchor="middle" fontSize="10" fill="#64748b">
+            <text key={`${point.label}-label-${index}`} x={x} y={height - 5} textAnchor="middle" fontSize="10" fill="#64748b">
               {point.label}
             </text>
           );

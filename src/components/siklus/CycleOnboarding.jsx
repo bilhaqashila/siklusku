@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "gsap";
 import useSiklusStore from "@/stores/useSiklusStore";
 import useSettingsStore from "@/stores/useSettingsStore";
+import { shallow } from "zustand/shallow";
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
@@ -198,15 +199,10 @@ function getStepErrors(stepIndex, values) {
 }
 
 export default function CycleOnboarding({ onComplete }) {
-  const { onboardingData, updateOnboardingData, setOnboardingCompleted } = useSiklusStore((state) => ({
-    onboardingData: state.onboardingData,
-    updateOnboardingData: state.updateOnboardingData,
-    setOnboardingCompleted: state.setOnboardingCompleted
-  }));
-  const { settings, hydrate } = useSettingsStore((state) => ({
-    settings: state.settings,
-    hydrate: state.hydrate
-  }));
+  const siklusState = useSiklusStore((state) => state, shallow);
+  const { onboardingData, updateOnboardingData, setOnboardingCompleted } = siklusState;
+  const settingsState = useSettingsStore((state) => state, shallow);
+  const { settings, hydrate } = settingsState;
 
   const [activeStep, setActiveStep] = useState(0);
   const [errors, setErrors] = useState({});
@@ -309,3 +305,5 @@ export default function CycleOnboarding({ onComplete }) {
     </div>
   );
 }
+
+

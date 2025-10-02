@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import useSettingsStore from "@/stores/useSettingsStore";
+import { shallow } from "zustand/shallow";
 
 const SECTIONS = [
   {
@@ -33,10 +34,8 @@ const SECTIONS = [
 
 export default function FirstPeriodGuide({ onComplete }) {
   const containerRef = useRef(null);
-  const { settings, hydrate } = useSettingsStore((state) => ({
-    settings: state.settings,
-    hydrate: state.hydrate
-  }));
+  const settingsState = useSettingsStore((state) => state, shallow);
+  const { settings, hydrate } = settingsState;
 
   useEffect(() => {
     hydrate();
@@ -120,3 +119,5 @@ export default function FirstPeriodGuide({ onComplete }) {
     </div>
   );
 }
+
+
