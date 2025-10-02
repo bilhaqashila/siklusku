@@ -116,6 +116,7 @@ body {
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -123,4 +124,18 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+  :focus-visible {
+    outline: 3px solid #f472b6;
+    outline-offset: 3px;
+  }
+  a,
+  button,
+  [role="button"],
+  [tabindex="0"] {
+    cursor: pointer;
+  }
 }
+
+
+
+
