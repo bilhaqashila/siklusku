@@ -17,7 +17,6 @@ import {
 } from "@/lib/siklus/cycleMath";
 import { calculateMoodDistribution, summarizeMoodTrend } from "@/lib/siklus/mood";
 import { projectUpcomingPeriods } from "@/lib/siklus/cycleMath";
-import { DEFAULT_VALUES, STORAGE_KEYS } from "@/lib/siklus/localStore";
 
 const PHASE_ART = {
   menstruation: {
@@ -102,7 +101,72 @@ const PHASE_ART = {
 };
 
 const SUPPORT_IMAGE = "/image/Teen%20Girl%20Hugging%20Friend%20(Support%20Banner%20Illustration).png";
+const PLACEHOLDER_IMAGE = "/image/Teen%20Girls%20Reading%20a%20Book%20Together%20(EducationOnboarding%20Guide).png";
 
+const PLACEHOLDER_COPY = {
+  loading: {
+    title: "Menyiapkan ruangmu",
+    message: "Kami sedang memuat data onboarding supaya pengalamanmu tetap personal dan aman di perangkat ini.",
+    showPulse: true
+  },
+  gate: {
+    title: "Yuk mulai kenalan",
+    message: "Pilih sudah atau belum haid untuk menentukan langkah berikutnya.",
+    showPulse: false
+  },
+  guide: {
+    title: "Pelajari tubuhmu dengan tenang",
+    message: "Scroll panduan pertama haid, kamu bisa kembali kapan saja.",
+    showPulse: false
+  },
+  form: {
+    title: "Isi data siklusmu",
+    message: "Catat tanggal haid, panjang siklus, dan tujuan supaya insight lebih akurat.",
+    showPulse: false
+  }
+};
+
+function OnboardingPlaceholder({ state }) {
+  const copy = PLACEHOLDER_COPY[state] || PLACEHOLDER_COPY.loading;
+  return (
+    <section
+      className="rounded-[32px] border border-pink-100/70 bg-white/85 p-8 text-center shadow-sm backdrop-blur-sm dark:border-slate-800/60 dark:bg-slate-900/70"
+      role="status"
+      aria-live="polite"
+      aria-busy={state === "loading"}
+    >
+      <div className="mx-auto flex max-w-md flex-col items-center gap-6">
+        <div className="relative h-28 w-28">
+          <div
+            className={`absolute inset-0 rounded-full ${copy.showPulse ? "bg-pink-200/70 motion-safe:animate-pulse dark:bg-pink-900/40" : "bg-pink-100/60 dark:bg-pink-900/20"}`}
+            aria-hidden="true"
+          />
+          <Image
+            src={PLACEHOLDER_IMAGE}
+            alt="Ilustrasi remaja membaca"
+            fill
+            priority
+            sizes="112px"
+            className="relative rounded-3xl object-cover shadow-md"
+          />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{copy.title}</h2>
+          <p className="text-sm text-slate-600 dark:text-slate-300">{copy.message}</p>
+        </div>
+        {copy.showPulse ? (
+          <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+            <span className="relative flex h-3 w-3">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75 motion-safe:animate-ping" aria-hidden="true" />
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-pink-500" aria-hidden="true" />
+            </span>
+            <span>Jangan tutup halaman ya, ini hanya sebentar.</span>
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
 function normalizeNumber(value, fallback) {
   const numeric = Number.parseInt(value, 10);
   if (Number.isFinite(numeric) && numeric > 0) {
@@ -122,7 +186,7 @@ export default function SikluskuPage() {
     goals,
     cycleSummary,
     setOnboardingCompleted,
-    updateOnboardingData
+    resetOnboardingData
   } = siklusState;
   const [flow, setFlow] = useState("loading");
 
@@ -136,6 +200,10 @@ export default function SikluskuPage() {
     }
     setFlow(onboardingCompleted ? "dashboard" : "gate");
   }, [hydrated, onboardingCompleted]);
+
+  const isHydrating = !hydrated || flow === "loading";
+  const placeholderState = isHydrating ? "loading" : flow !== "dashboard" ? flow : null;
+  const showPlaceholder = Boolean(placeholderState);
 
   const moodDistribution = useMemo(() => calculateMoodDistribution(moodLogs), [moodLogs]);
   const moodSummary = useMemo(() => summarizeMoodTrend(moodLogs), [moodLogs]);
@@ -180,8 +248,8 @@ export default function SikluskuPage() {
   }, [onboardingData]);
 
   function handleGuideComplete() {
+    resetOnboardingData();
     setOnboardingCompleted(true);
-    updateOnboardingData(DEFAULT_VALUES[STORAGE_KEYS.onboardingData]);
     setFlow("dashboard");
   }
 
@@ -381,15 +449,13 @@ export default function SikluskuPage() {
 
   return (
     <main className="container mx-auto max-w-4xl space-y-8 px-4 py-10 dark:text-slate-100">
-      <OnboardingGate
-        open={flow === "gate"}
-        onBelum={() => setFlow("guide")}
-        onSudah={() => setFlow("form")}
-      />
+      {showPlaceholder ? <OnboardingPlaceholder state={placeholderState} /> : null}
 
-      {flow === "guide" ? (
-        <FirstPeriodGuide onComplete={handleGuideComplete} />
+      {hydrated ? (
+        <OnboardingGate open={flow === "gate"} onBelum={() => setFlow("guide")} onSudah={() => setFlow("form")} />
       ) : null}
+
+      {flow === "guide" ? <FirstPeriodGuide onComplete={handleGuideComplete} /> : null}
 
       {flow === "form" ? <CycleOnboarding onComplete={handleFormComplete} /> : null}
 
@@ -397,3 +463,11 @@ export default function SikluskuPage() {
     </main>
   );
 }
+
+
+
+
+
+
+
+

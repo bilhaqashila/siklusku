@@ -17,7 +17,8 @@ const DEFAULT_VALUES = {
     periodLength: 5,
     regularity: "regular",
     painScale: 5,
-    birthYear: null
+    birthYear: null,
+    goals: []
   },
   [STORAGE_KEYS.moodLogs]: [],
   [STORAGE_KEYS.streak]: 0,
@@ -135,4 +136,5 @@ export function clearAllSiklusData() {
 }
 
 export { STORAGE_KEYS, DEFAULT_VALUES };
+
 

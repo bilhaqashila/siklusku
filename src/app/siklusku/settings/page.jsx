@@ -4,13 +4,13 @@ import { useEffect } from "react";
 import useSettingsStore from "@/stores/useSettingsStore";
 import { shallow } from "zustand/shallow";
 import useSiklusStore from "@/stores/useSiklusStore";
-import { clearAllSiklusData, DEFAULT_VALUES, STORAGE_KEYS } from "@/lib/siklus/localStore";
+import { clearAllSiklusData } from "@/lib/siklus/localStore";
 
 export default function SikluskuSettingsPage() {
   const settingsState = useSettingsStore((state) => state, shallow);
   const { hydrate: hydrateSettings, settings, toggleNudges, setReducedMotion } = settingsState;
   const siklusState = useSiklusStore((state) => state, shallow);
-  const { hydrate: hydrateSiklus, updateOnboardingData, setOnboardingCompleted } = siklusState;
+  const { hydrate: hydrateSiklus, resetOnboardingData, replaceMoodLogs, setGoals, setOnboardingCompleted, resetLoveLetter } = siklusState;
 
   useEffect(() => {
     hydrateSettings();
@@ -19,7 +19,10 @@ export default function SikluskuSettingsPage() {
 
   function handleClearData() {
     clearAllSiklusData();
-    updateOnboardingData(DEFAULT_VALUES[STORAGE_KEYS.onboardingData]);
+    resetOnboardingData();
+    replaceMoodLogs([]);
+    setGoals([]);
+    resetLoveLetter();
     setOnboardingCompleted(false);
   }
 
@@ -92,5 +95,9 @@ export default function SikluskuSettingsPage() {
     </main>
   );
 }
+
+
+
+
 
 

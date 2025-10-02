@@ -1,34 +1,58 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { gsap } from "gsap";
+import ScrollTrigger from "gsap/ScrollTrigger";
 import useSettingsStore from "@/stores/useSettingsStore";
 import { shallow } from "zustand/shallow";
 
-const SECTIONS = [
+gsap.registerPlugin(ScrollTrigger);
+
+const GUIDE_SECTIONS = [
   {
     id: "intro",
     title: "Apa itu haid?",
     description:
-      "Haid adalah proses alami ketika tubuh melepaskan lapisan rahim setiap bulan. Siklus ini jadi tanda tubuhmu tumbuh dan sehat."
+      "Haid adalah proses alami ketika lapisan rahim dilepaskan dan keluar sebagai darah. Siklus ini tanda tubuhmu sehat dan sedang tumbuh.",
+    image: {
+      src: "/image/Teen%20Girl%20Smiling%20(Phase%20Card%20Hero).png",
+      alt: "Remaja tersenyum memegang buku catatan"
+    },
+    accent: "from-pink-100 via-white to-orange-50"
   },
   {
     id: "signs",
     title: "Tanda-tanda akan mulai haid",
     description:
-      "Biasanya diawali dengan payudara yang mulai berkembang, tumbuh rambut halus, atau muncul bercak. Setiap tubuh berbeda, tidak perlu dibandingkan."
+      "Payudara mulai berkembang, tumbuh rambut halus, atau muncul bercak di pakaian dalam. Setiap tubuh berbeda, jadi santai saja dan amati perlahan.",
+    image: {
+      src: "/image/Teen%20Girls%20Reading%20a%20Book%20Together%20(EducationOnboarding%20Guide).png",
+      alt: "Dua remaja membaca buku bersama"
+    },
+    accent: "from-rose-100 via-white to-purple-50"
   },
   {
     id: "prep",
     title: "Persiapan yang bisa kamu lakukan",
     description:
-      "Siapkan pembalut atau menstrual pad, catat tanggal perkiraan, dan sediakan tas kecil berisi kebutuhan daruratmu."
+      "Siapkan pembalut atau menstrual pad, catat perkiraan tanggal, dan sediakan tas kecil berisi kebutuhan daruratmu. Jangan lupa simpan nomor orang dewasa yang bisa kamu hubungi.",
+    image: {
+      src: "/image/Teen%20Girl%20Pointing%20at%20Calendar%20(Cycle%20Tracker%20%20Calendar%20Widget).png",
+      alt: "Remaja menunjuk kalender"
+    },
+    accent: "from-amber-100 via-white to-green-50"
   },
   {
     id: "support",
     title: "Cara dukung teman",
     description:
-      "Tawarkan bantuan dengan ramah, bantu mereka merasa nyaman, dan jaga privasi. Saling dukung bikin semua merasa lebih tenang."
+      "Tawarkan bantuan dengan ramah, bantu mereka merasa nyaman, dan jaga privasi. Saling dukung bikin semua merasa lebih tenang dan percaya diri.",
+    image: {
+      src: "/image/Teen%20Girl%20Hugging%20Friend%20(Support%20Banner%20Illustration).png",
+      alt: "Remaja berpelukan memberikan dukungan"
+    },
+    accent: "from-blue-100 via-white to-emerald-50"
   }
 ];
 
@@ -36,6 +60,7 @@ export default function FirstPeriodGuide({ onComplete }) {
   const containerRef = useRef(null);
   const settingsState = useSettingsStore((state) => state, shallow);
   const { settings, hydrate } = settingsState;
+  const [activeSection, setActiveSection] = useState(GUIDE_SECTIONS[0].id);
 
   useEffect(() => {
     hydrate();
@@ -45,25 +70,72 @@ export default function FirstPeriodGuide({ onComplete }) {
     if (!containerRef.current) {
       return undefined;
     }
-    if (settings.reducedMotion) {
-      return undefined;
-    }
-    const sections = containerRef.current.querySelectorAll("section");
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        sections,
-        { autoAlpha: 0, y: 16 },
-        {
-          autoAlpha: 1,
-          y: 0,
-          duration: 0.6,
-          stagger: 0.1,
-          ease: "power2.out"
+
+    const guideSections = Array.from(containerRef.current.querySelectorAll("[data-guide-section]"));
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (visible.length > 0) {
+          const nextActive = visible[0].target.getAttribute("data-guide-section");
+          if (nextActive) {
+            setActiveSection(nextActive);
+          }
         }
-      );
-    }, containerRef);
-    return () => ctx.revert();
+      },
+      {
+        root: null,
+        threshold: [0.25, 0.5, 0.75]
+      }
+    );
+
+    guideSections.forEach((section) => observer.observe(section));
+
+    let ctx;
+    if (!settings.reducedMotion) {
+      ctx = gsap.context(() => {
+        guideSections.forEach((section) => {
+          ScrollTrigger.create({
+            trigger: section,
+            start: "top 80%",
+            once: true,
+            onEnter: () => {
+              gsap.fromTo(
+                section,
+                { autoAlpha: 0, y: 24 },
+                {
+                  autoAlpha: 1,
+                  y: 0,
+                  duration: 0.6,
+                  ease: "power2.out"
+                }
+              );
+            }
+          });
+        });
+      }, containerRef);
+    }
+
+    return () => {
+      guideSections.forEach((section) => observer.unobserve(section));
+      observer.disconnect();
+      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+      if (ctx) {
+        ctx.revert();
+      }
+    };
   }, [settings.reducedMotion]);
+
+  const progressItems = useMemo(
+    () =>
+      GUIDE_SECTIONS.map((section) => ({
+        id: section.id,
+        title: section.title
+      })),
+    []
+  );
 
   return (
     <div ref={containerRef} className="space-y-8">
@@ -79,37 +151,61 @@ export default function FirstPeriodGuide({ onComplete }) {
         </p>
       </header>
 
-      <div className="space-y-6" aria-label="Panduan persiapan haid">
-        {SECTIONS.map((section, index) => (
-          <section
-            key={section.id}
-            className="rounded-2xl border border-pink-100 bg-white p-6 shadow-xs"
-          >
-            <div className="flex items-start gap-4">
-              <span
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-100 text-base font-semibold text-pink-600"
-                aria-hidden="true"
-              >
-                {index + 1}
-              </span>
-              <div>
-                <h4 className="text-lg font-semibold text-slate-800">{section.title}</h4>
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                  {section.description}
-                </p>
+      <div className="flex flex-col gap-6 md:flex-row">
+        <nav aria-label="Progress panduan" className="md:w-48">
+          <ol className="flex flex-row justify-between md:flex-col md:gap-4">
+            {progressItems.map((item, index) => {
+              const isActive = item.id === activeSection;
+              return (
+                <li key={item.id} className="flex items-center gap-3">
+                  <span
+                    className={`flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-colors ${
+                      isActive ? "border-pink-500 bg-pink-500 text-white" : "border-pink-200 bg-white text-pink-400"
+                    }`}
+                    aria-hidden="true"
+                  >
+                    {index + 1}
+                  </span>
+                  <span className={`text-xs font-medium ${isActive ? "text-pink-600" : "text-slate-400"}`}>
+                    {item.title}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
+
+        <div className="flex-1 space-y-6" aria-label="Panduan persiapan haid">
+          {GUIDE_SECTIONS.map((section, index) => (
+            <section
+              key={section.id}
+              data-guide-section={section.id}
+              className="rounded-2xl border border-pink-100 bg-white p-6 shadow-sm"
+            >
+              <div className={`grid gap-4 sm:grid-cols-[auto,1fr] sm:items-center bg-gradient-to-r ${section.accent} rounded-2xl p-5`}>
+                <div className="relative h-28 w-28 overflow-hidden rounded-2xl bg-white/70 shadow-sm">
+                  <Image src={section.image.src} alt={section.image.alt} fill sizes="112px" className="object-cover" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/70 text-base font-semibold text-pink-600" aria-hidden="true">
+                      {index + 1}
+                    </span>
+                    <h4 className="text-lg font-semibold text-slate-800">{section.title}</h4>
+                  </div>
+                  <p className="mt-3 text-sm leading-relaxed text-slate-600">{section.description}</p>
+                </div>
               </div>
-            </div>
-          </section>
-        ))}
+            </section>
+          ))}
+        </div>
       </div>
 
       <div className="flex flex-col items-center gap-3 rounded-3xl bg-white p-6 text-center shadow-sm">
-        <p className="text-sm text-slate-600">
-          Simpan halaman ini kalau butuh baca ulang ya!
-        </p>
+        <p className="text-sm text-slate-600">Simpan halaman ini kalau butuh baca ulang ya!</p>
         <button
           type="button"
-          className="rounded-full bg-pink-500 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-transform duration-200 hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-600 cursor-pointer"
+          className="cursor-pointer rounded-full bg-pink-500 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-transform duration-200 hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-600"
           aria-label="Selesai membaca panduan, kembali ke dashboard"
           onClick={onComplete}
         >
@@ -119,5 +215,3 @@ export default function FirstPeriodGuide({ onComplete }) {
     </div>
   );
 }
-
-

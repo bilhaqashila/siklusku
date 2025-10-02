@@ -8,7 +8,79 @@ import { shallow } from "zustand/shallow";
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
+const GOAL_OPTIONS = [
+  {
+    id: "prediction",
+    emoji: "??",
+    label: "Prediksi haid",
+    description: "Selalu tahu kapan periode berikutnya datang."
+  },
+  {
+    id: "fertility",
+    emoji: "??",
+    label: "Rencana kesuburan",
+    description: "Pantau masa suburmu dengan mudah."
+  },
+  {
+    id: "health",
+    emoji: "??",
+    label: "Kesehatan tubuh",
+    description: "Catat pola makan, tidur, dan aktivitas."
+  },
+  {
+    id: "mood",
+    emoji: "??",
+    label: "Mood harian",
+    description: "Kenali pola emosi sepanjang siklus."
+  },
+  {
+    id: "symptoms",
+    emoji: "??",
+    label: "Gejala",
+    description: "Simpan catatan gejala unikmu."
+  },
+  {
+    id: "pain",
+    emoji: "??",
+    label: "Kelola nyeri",
+    description: "Lihat pola rasa sakit untuk cari bantuan."
+  },
+  {
+    id: "general",
+    emoji: "?",
+    label: "Catatan umum",
+    description: "Satu tempat untuk semua cerita tubuhmu."
+  }
+];
+
+function calculateDurationDays(start, end) {
+  if (!start || !end) {
+    return null;
+  }
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    return null;
+  }
+  const diff = endDate.getTime() - startDate.getTime();
+  if (!Number.isFinite(diff) || diff < 0) {
+    return null;
+  }
+  return Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
+}
+
 function DateStep({ values, errors, onChange }) {
+  const today = todayIso();
+  const durationWarning = useMemo(() => {
+    const duration = calculateDurationDays(values.lastPeriodStart, values.lastPeriodEnd);
+    if (!duration || duration <= 8) {
+      return null;
+    }
+    return "Durasi haidmu lebih dari 8 hari. Kalau ini baru terjadi, coba diskusikan dengan orang dewasa atau tenaga kesehatan yang kamu percaya.";
+  }, [values.lastPeriodStart, values.lastPeriodEnd]);
+
+  const endMin = values.lastPeriodStart || undefined;
+
   return (
     <fieldset className="space-y-4" aria-describedby="period-date-hint">
       <legend className="text-lg font-semibold text-slate-800">Kapan terakhir kali kamu haid?</legend>
@@ -19,7 +91,7 @@ function DateStep({ values, errors, onChange }) {
         Tanggal mulai
         <input
           type="date"
-          max={todayIso()}
+          max={today}
           value={values.lastPeriodStart || ""}
           onChange={(event) => onChange("lastPeriodStart", event.target.value)}
           className="rounded-lg border border-slate-200 px-3 py-2 text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
@@ -32,15 +104,18 @@ function DateStep({ values, errors, onChange }) {
         Tanggal selesai
         <input
           type="date"
-          max={todayIso()}
+          min={endMin}
+          max={today}
           value={values.lastPeriodEnd || ""}
           onChange={(event) => onChange("lastPeriodEnd", event.target.value)}
           className="rounded-lg border border-slate-200 px-3 py-2 text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
         />
+        <span className="text-xs text-slate-400">Kalau belum selesai, pilih perkiraan terbaikmu.</span>
         {errors.lastPeriodEnd ? (
           <span className="text-xs text-red-500">{errors.lastPeriodEnd}</span>
         ) : null}
       </label>
+      {durationWarning ? <p className="text-xs text-amber-600">{durationWarning}</p> : null}
     </fieldset>
   );
 }
@@ -58,7 +133,7 @@ function CycleStep({ values, errors, onChange }) {
             min="21"
             max="35"
             value={values.cycleLength ?? ""}
-            onChange={(event) => onChange("cycleLength", Number(event.target.value))}
+            onChange={(event) => onChange("cycleLength", event.target.value)}
             className="rounded-lg border border-slate-200 px-3 py-2 text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
           />
           {errors.cycleLength ? (
@@ -72,7 +147,7 @@ function CycleStep({ values, errors, onChange }) {
             min="2"
             max="8"
             value={values.periodLength ?? ""}
-            onChange={(event) => onChange("periodLength", Number(event.target.value))}
+            onChange={(event) => onChange("periodLength", event.target.value)}
             className="rounded-lg border border-slate-200 px-3 py-2 text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
           />
           {errors.periodLength ? (
@@ -129,6 +204,54 @@ function CycleStep({ values, errors, onChange }) {
   );
 }
 
+function GoalsStep({ values, errors, onChange }) {
+  const selected = Array.isArray(values.goals) ? values.goals : [];
+
+  function toggleGoal(goalId) {
+    const isActive = selected.includes(goalId);
+    const nextGoals = isActive ? selected.filter((item) => item !== goalId) : [...selected, goalId];
+    onChange("goals", nextGoals);
+  }
+
+  return (
+    <fieldset className="space-y-4" aria-describedby="goals-hint">
+      <legend className="text-lg font-semibold text-slate-800">Tujuanmu pakai Siklusku</legend>
+      <p id="goals-hint" className="text-sm text-slate-500">
+        Pilih minimal satu. Kami akan menampilkan tips dan fitur yang paling cocok dengan kebutuhanmu.
+      </p>
+      <div className="grid gap-3 md:grid-cols-2">
+        {GOAL_OPTIONS.map((option) => {
+          const isActive = selected.includes(option.id);
+          return (
+            <button
+              key={option.id}
+              type="button"
+              role="checkbox"
+              aria-checked={isActive}
+              onClick={() => toggleGoal(option.id)}
+              className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500 cursor-pointer ${
+                isActive
+                  ? "border-pink-500 bg-pink-100 text-pink-700"
+                  : "border-slate-200 bg-white text-slate-700"
+              }`}
+            >
+              <span className="text-xl" aria-hidden="true">
+                {option.emoji}
+              </span>
+              <span className="space-y-1">
+                <span className="block text-sm font-semibold">{option.label}</span>
+                <span className="block text-xs text-slate-500">{option.description}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {errors.goals ? <span className="text-xs text-red-500">{errors.goals}</span> : null}
+      <p className="text-xs text-slate-400">Kamu bisa ubah pilihan kapan saja di Pengaturan.</p>
+    </fieldset>
+  );
+}
+
 function IdentityStep({ values, errors, onChange }) {
   return (
     <fieldset className="space-y-4">
@@ -140,7 +263,7 @@ function IdentityStep({ values, errors, onChange }) {
           min="1990"
           max="2015"
           value={values.birthYear ?? ""}
-          onChange={(event) => onChange("birthYear", Number(event.target.value))}
+          onChange={(event) => onChange("birthYear", event.target.value)}
           className="rounded-lg border border-slate-200 px-3 py-2 text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
           aria-describedby="birthYearHint"
         />
@@ -158,40 +281,51 @@ function IdentityStep({ values, errors, onChange }) {
 const steps = [
   { id: "dates", component: DateStep, title: "Tanggal terakhir haid" },
   { id: "details", component: CycleStep, title: "Detail siklus" },
+  { id: "goals", component: GoalsStep, title: "Pilih tujuan" },
   { id: "identity", component: IdentityStep, title: "Tahun lahir" }
 ];
 
 function getStepErrors(stepIndex, values) {
   const nextErrors = {};
+  const today = todayIso();
   if (stepIndex === 0) {
     if (!values.lastPeriodStart) {
       nextErrors.lastPeriodStart = "Isi tanggal mulai ya";
+    } else if (values.lastPeriodStart > today) {
+      nextErrors.lastPeriodStart = "Tanggal tidak boleh di masa depan";
     }
     if (!values.lastPeriodEnd) {
       nextErrors.lastPeriodEnd = "Isi tanggal selesai ya";
+    } else if (values.lastPeriodEnd > today) {
+      nextErrors.lastPeriodEnd = "Tanggal tidak boleh di masa depan";
     }
-    if (values.lastPeriodStart && values.lastPeriodEnd) {
-      if (values.lastPeriodEnd < values.lastPeriodStart) {
-        nextErrors.lastPeriodEnd = "Tanggal selesai tidak boleh sebelum tanggal mulai";
-      }
-      if (values.lastPeriodStart > todayIso()) {
-        nextErrors.lastPeriodStart = "Tanggal tidak boleh di masa depan";
-      }
+    if (values.lastPeriodStart && values.lastPeriodEnd && values.lastPeriodEnd < values.lastPeriodStart) {
+      nextErrors.lastPeriodEnd = "Tanggal selesai tidak boleh sebelum tanggal mulai";
     }
   }
   if (stepIndex === 1) {
-    if (!values.cycleLength || values.cycleLength < 21 || values.cycleLength > 35) {
+    const cycleLength = Number(values.cycleLength);
+    if (!Number.isFinite(cycleLength) || cycleLength < 21 || cycleLength > 35) {
       nextErrors.cycleLength = "Panjang siklus 21-35 hari";
     }
-    if (!values.periodLength || values.periodLength < 2 || values.periodLength > 8) {
+    const periodLength = Number(values.periodLength);
+    if (!Number.isFinite(periodLength) || periodLength < 2 || periodLength > 8) {
       nextErrors.periodLength = "Lama haid 2-8 hari";
     }
-    if (!values.painScale) {
+    const painScale = Number(values.painScale);
+    if (!Number.isFinite(painScale) || painScale < 1 || painScale > 10) {
       nextErrors.painScale = "Pilih skala nyeri";
     }
   }
   if (stepIndex === 2) {
-    if (!values.birthYear || values.birthYear < 1990 || values.birthYear > 2015) {
+    if (!Array.isArray(values.goals) || values.goals.length === 0) {
+      nextErrors.goals = "Pilih minimal satu tujuan";
+    }
+  }
+  if (stepIndex === 3) {
+    const birthYearRaw = values.birthYear ? String(values.birthYear).trim() : "";
+    const birthYearNumeric = Number.parseInt(birthYearRaw, 10);
+    if (birthYearRaw.length !== 4 || !Number.isFinite(birthYearNumeric) || birthYearNumeric < 1990 || birthYearNumeric > 2015) {
       nextErrors.birthYear = "Isi tahun lahir antara 1990-2015";
     }
   }
@@ -200,7 +334,12 @@ function getStepErrors(stepIndex, values) {
 
 export default function CycleOnboarding({ onComplete }) {
   const siklusState = useSiklusStore((state) => state, shallow);
-  const { onboardingData, updateOnboardingData, setOnboardingCompleted } = siklusState;
+  const {
+    onboardingData,
+    updateOnboardingDraft,
+    commitOnboardingData,
+    setOnboardingCompleted
+  } = siklusState;
   const settingsState = useSettingsStore((state) => state, shallow);
   const { settings, hydrate } = settingsState;
 
@@ -232,12 +371,13 @@ export default function CycleOnboarding({ onComplete }) {
       cycleLength: onboardingData.cycleLength ?? 28,
       periodLength: onboardingData.periodLength ?? 5,
       regularity: onboardingData.regularity || "regular",
-      painScale: onboardingData.painScale ?? 5
+      painScale: onboardingData.painScale ?? 5,
+      goals: Array.isArray(onboardingData.goals) ? onboardingData.goals : []
     }),
     [onboardingData]
   );
 
-  const pendingErrors = useMemo(
+  const stepValidation = useMemo(
     () => getStepErrors(activeStep, currentValues),
     [activeStep, currentValues]
   );
@@ -255,6 +395,7 @@ export default function CycleOnboarding({ onComplete }) {
       return;
     }
     if (activeStep === steps.length - 1) {
+      commitOnboardingData();
       setOnboardingCompleted(true);
       onComplete?.();
       return;
@@ -270,8 +411,27 @@ export default function CycleOnboarding({ onComplete }) {
 
   function handleChange(field, value) {
     setErrors((prev) => ({ ...prev, [field]: undefined }));
-    updateOnboardingData({ [field]: value });
+    let nextValue = value;
+    if (field === "lastPeriodStart" || field === "lastPeriodEnd") {
+      nextValue = value || null;
+    } else if (["cycleLength", "periodLength", "birthYear", "painScale"].includes(field)) {
+      if (value === null || value === undefined || value === "") {
+        nextValue = null;
+      } else if (typeof value === "number") {
+        nextValue = Number.isFinite(value) ? value : null;
+      } else {
+        const parsed = Number.parseInt(value, 10);
+        nextValue = Number.isFinite(parsed) ? parsed : null;
+      }
+    } else if (field === "regularity" && typeof value !== "string") {
+      nextValue = String(value);
+    } else if (field === "goals") {
+      nextValue = Array.isArray(value) ? value : [];
+    }
+    updateOnboardingDraft({ [field]: nextValue });
   }
+
+  const nextDisabled = Object.keys(stepValidation).length > 0;
 
   return (
     <div className="space-y-6" ref={cardRef}>
@@ -282,7 +442,7 @@ export default function CycleOnboarding({ onComplete }) {
         <h3 className="text-2xl font-semibold text-slate-800">{steps[activeStep].title}</h3>
       </header>
       <div className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm">
-        <StepComponent values={currentValues} errors={{ ...errors, ...pendingErrors }} onChange={handleChange} />
+        <StepComponent values={currentValues} errors={errors} onChange={handleChange} />
       </div>
       <div className="flex items-center justify-between">
         <button
@@ -297,7 +457,7 @@ export default function CycleOnboarding({ onComplete }) {
           type="button"
           className="rounded-full bg-pink-500 px-6 py-2 text-sm font-semibold text-white shadow-sm transition hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500 cursor-pointer disabled:opacity-40"
           onClick={handleNext}
-          disabled={Object.keys(pendingErrors).length > 0}
+          disabled={nextDisabled}
         >
           {activeStep === steps.length - 1 ? "Selesai" : "Lanjut"}
         </button>
@@ -305,5 +465,3 @@ export default function CycleOnboarding({ onComplete }) {
     </div>
   );
 }
-
-
