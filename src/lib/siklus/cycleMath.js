@@ -43,6 +43,17 @@ function formatDateLocal(date) {
   return [year, month, day].join("-");
 }
 
+export function formatDisplayDate(value) {
+  const date = toDate(value);
+  if (!date) {
+    return "";
+  }
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return day + "/" + month + "/" + year;
+}
+
 function diffInDays(start, end) {
   const startDate = toDate(start);
   const endDate = toDate(end);
@@ -151,47 +162,68 @@ export function calculateCycleSummary(periods = []) {
   if (!Array.isArray(periods) || periods.length === 0) {
     return {
       averageCycleLength: 28,
-      averagePeriodLength: 5
+      averagePeriodLength: 5,
+      cycleHistory: []
     };
   }
 
-  const sorted = [...periods]
-    .map((entry) => ({
-      start: toDate(entry.start),
-      end: toDate(entry.end)
-    }))
-    .filter((entry) => entry.start)
+  const normalizedEntries = [...periods]
+    .map((entry) => {
+      const start = toDate(entry.start);
+      if (!start) {
+        return null;
+      }
+      const end = entry.end ? toDate(entry.end) : null;
+      return {
+        start,
+        end,
+        startIso: formatDateLocal(start),
+        endIso: end ? formatDateLocal(end) : null,
+        predicted: Boolean(entry.predicted)
+      };
+    })
+    .filter(Boolean)
     .sort((a, b) => a.start.getTime() - b.start.getTime());
 
-  if (sorted.length === 0) {
+  if (normalizedEntries.length === 0) {
     return {
       averageCycleLength: 28,
-      averagePeriodLength: 5
+      averagePeriodLength: 5,
+      cycleHistory: []
     };
   }
 
   const cycleLengths = [];
   const periodLengths = [];
+  const cycleHistory = [];
 
-  sorted.forEach((entry, index) => {
+  normalizedEntries.forEach((entry, index) => {
     if (entry.end) {
       const periodLength = calculatePeriodLength(entry.start, entry.end);
       if (periodLength) {
         periodLengths.push(periodLength);
       }
     }
-    const next = sorted[index + 1];
+    const next = normalizedEntries[index + 1];
     if (next) {
       const cycleLength = calculateCycleLength(entry.start, next.start);
       if (cycleLength) {
         cycleLengths.push(cycleLength);
+        if (!entry.predicted && !next.predicted) {
+          cycleHistory.push({
+            start: entry.startIso,
+            end: next.startIso,
+            length: cycleLength
+          });
+        }
       }
     }
   });
 
   return {
     averageCycleLength: average(cycleLengths) || 28,
-    averagePeriodLength: average(periodLengths) || 5
+    averagePeriodLength: average(periodLengths) || 5,
+    cycleHistory
   };
 }
 

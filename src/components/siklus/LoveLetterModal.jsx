@@ -146,28 +146,17 @@ export default function LoveLetterModal({ open, onClose, reducedMotion }) {
         <div className="absolute inset-0 bg-gradient-to-br from-pink-100 via-white to-slate-50" aria-hidden="true" />
         <div className="relative grid gap-6 p-8 sm:grid-cols-[1.1fr_0.9fr] sm:p-10">
           <div className="space-y-4 text-left text-slate-700">
-            <span className="inline-flex w-fit items-center gap-2 rounded-full bg-pink-500/10 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-pink-600">
-              Dear Body
-            </span>
             <div className="space-y-2">
-              <h2 id="love-letter-title" className="text-3xl font-semibold text-slate-900">
-                Terima kasih sudah kuat dan lembut
-              </h2>
+              <h2 id="love-letter-title" className="text-3xl font-semibold text-slate-900 text-center">
+                💌 Kamu Mendapat Surat Cinta 💌</h2>
+                {/* <h3 className="text-xl font-semibold text-slate-900">dari: Tubuhmu💖</h3> */}
               <p id="love-letter-body" className="text-sm leading-relaxed text-slate-600">
-                Hai tubuhku, terima kasih sudah menemani setiap hari�meski lelah, tetap bertahan. Yuk, kita rawat diri
-                pelan-pelan. Catatan kecil di Siklusku ini akan bantu kita saling memahami lebih baik.
+                Hai sayangku, aku tubuhmu.</p>
+              <p id="love-letter-body" className="text-sm leading-relaxed text-slate-600">
+                Setiap bulan, aku membersihkan dan mempersiapkan ruang baru untukmu. Bukan karena ada yang salah, tapi karena aku sehat! Terimakasih sudah merawatku dengan lembut. Kita tumbuh bersama ya? Cukup dengarkan… dan catat.
               </p>
             </div>
-            <ul className="space-y-2 text-sm text-slate-600">
-              <li className="flex items-start gap-2">
-                <span className="mt-1 inline-flex h-2 w-2 rounded-full bg-pink-500" aria-hidden="true" />
-                <span>Dengarkan sinyal tubuhmu, istirahat saat perlu.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-1 inline-flex h-2 w-2 rounded-full bg-pink-500" aria-hidden="true" />
-                <span>Tulis perasaanmu�setiap emosi valid dan penting.</span>
-              </li>
-            </ul>
+            <div className="flex justify-center">
             <button
               type="button"
               className="mt-4 inline-flex items-center justify-center rounded-full bg-pink-500 px-6 py-2 text-sm font-semibold text-white shadow-lg shadow-pink-200/60 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-600 disabled:cursor-not-allowed disabled:opacity-60"
@@ -175,20 +164,21 @@ export default function LoveLetterModal({ open, onClose, reducedMotion }) {
               disabled={!closeEnabled}
               aria-disabled={!closeEnabled}
             >
-              {closeEnabled ? "Peluk diriku sendiri" : `Tunggu ${remaining}s`}
+              {closeEnabled ? "Mulai Mencatat" : `Tunggu ${remaining}s`}
             </button>
-          </div>
-          <div className="relative flex items-center justify-center">
-            <div className="absolute inset-0 rounded-[28px] bg-gradient-to-bl from-pink-200 via-white to-amber-50" aria-hidden="true" />
-            <Image
-              src="/image/Teen%20Girl%20With%20Letter%20(Surat%20Cinta).png"
-              alt="Ilustrasi surat cinta untuk tubuh"
-              width={260}
-              height={260}
-              className="relative h-48 w-48 sm:h-56 sm:w-56"
-              priority
-            />
-          </div>
+            </div>
+           </div>
+           <div className="relative flex items-center justify-center">
+    <div className="absolute inset-0 rounded-[28px]" aria-hidden="true" />
+    <Image
+      src="/image/suratcinta.png"
+      alt="Ilustrasi surat cinta"
+      width={320}
+      height={320}
+      className="relative h-64 w-64 object-contain sm:h-72 sm:w-72"
+      priority
+    />
+         </div>
         </div>
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           {confettiStyle.map((style, index) => (

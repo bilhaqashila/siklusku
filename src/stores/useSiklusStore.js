@@ -125,19 +125,20 @@ function buildSummaryFromOnboarding(data) {
 
   const summaryPeriods = summaryInput.map((entry) => {
     if (entry.end) {
-      return { start: entry.start, end: entry.end };
+      return { start: entry.start, end: entry.end, predicted: Boolean(entry.predicted) };
     }
     if (entry.predicted || periodLengthValue <= 0) {
-      return { start: entry.start, end: entry.end };
+      return { start: entry.start, end: entry.end, predicted: Boolean(entry.predicted) };
     }
     const startDate = new Date(entry.start);
     if (Number.isNaN(startDate.getTime())) {
-      return { start: entry.start, end: entry.end };
+      return { start: entry.start, end: entry.end, predicted: Boolean(entry.predicted) };
     }
     const endDate = new Date(startDate.getTime() + (periodLengthValue - 1) * MS_PER_DAY);
     return {
       start: entry.start,
-      end: formatDateString(endDate)
+      end: formatDateString(endDate),
+      predicted: Boolean(entry.predicted)
     };
   });
 
@@ -384,23 +385,4 @@ const useSiklusStore = create((set, get) => ({
 }));
 
 export default useSiklusStore;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

@@ -212,4 +212,3 @@ export function analyzeMoodPatternsByPhase(moodLogs = [], cycleSummary = {}) {
     hasData
   };
 }
-

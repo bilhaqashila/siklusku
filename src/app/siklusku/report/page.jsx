@@ -5,12 +5,13 @@ import MoodPieChart from "@/components/siklus/charts/MoodPieChart";
 import CycleTrendChart from "@/components/siklus/charts/CycleTrendChart";
 import ChartExportButton from "@/components/siklus/charts/ChartExportButton";
 import useSiklusStore from "@/stores/useSiklusStore";
-import { shallow } from "zustand/shallow";
 import { calculateMoodDistribution, summarizeMoodTrend } from "@/lib/siklus/mood";
 
 export default function SikluskuReportPage() {
-  const siklusState = useSiklusStore((state) => state, shallow);
-  const { hydrate, hydrated, moodLogs, cycleSummary } = siklusState;
+  const hydrate = useSiklusStore((state) => state.hydrate);
+  const hydrated = useSiklusStore((state) => state.hydrated);
+  const moodLogs = useSiklusStore((state) => state.moodLogs);
+  const cycleSummary = useSiklusStore((state) => state.cycleSummary);
 
   useEffect(() => {
     hydrate();
@@ -18,6 +19,41 @@ export default function SikluskuReportPage() {
 
   const moodDistribution = useMemo(() => calculateMoodDistribution(moodLogs), [moodLogs]);
   const moodSummary = useMemo(() => summarizeMoodTrend(moodLogs), [moodLogs]);
+  const cycleTrendPoints = useMemo(() => {
+    const history = Array.isArray(cycleSummary.cycleHistory) ? cycleSummary.cycleHistory : [];
+    if (!history.length) {
+      return [
+        {
+          label: "Saat ini",
+          value: cycleSummary.averageCycleLength
+        }
+      ];
+    }
+    const formatter = new Intl.DateTimeFormat("id-ID", { month: "short" });
+    const points = history
+      .map((item) => {
+        const reference = item.end || item.start;
+        const parsed = reference ? new Date(reference) : null;
+        if (!parsed || Number.isNaN(parsed.getTime())) {
+          return null;
+        }
+        const label = formatter.format(parsed) + " " + String(parsed.getFullYear()).slice(-2);
+        return {
+          label,
+          value: item.length
+        };
+      })
+      .filter(Boolean);
+    if (!points.length) {
+      return [
+        {
+          label: "Saat ini",
+          value: cycleSummary.averageCycleLength
+        }
+      ];
+    }
+    return points.slice(-6);
+  }, [cycleSummary]);
 
   if (!hydrated) {
     return (
@@ -44,10 +80,7 @@ export default function SikluskuReportPage() {
         <div className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-800">Panjang siklus</h2>
           <CycleTrendChart
-            points={moodLogs.map((entry, index) => ({
-              label: `Log ${index + 1}`,
-              value: cycleSummary.averageCycleLength
-            }))}
+            points={cycleTrendPoints}
           />
         </div>
       </section>

@@ -9,7 +9,8 @@ import {
   predictNextPeriod,
   calculateCycleSummary,
   buildCycleTimeline,
-  projectUpcomingPeriods
+  projectUpcomingPeriods,
+  formatDisplayDate
 } from "../src/lib/siklus/cycleMath.js";
 
 test("cycleDay returns null without start date", () => {
@@ -54,6 +55,8 @@ test("calculateCycleSummary falls back when missing", () => {
   const summary = calculateCycleSummary();
   assert.equal(summary.averageCycleLength, 28);
   assert.equal(summary.averagePeriodLength, 5);
+  assert.ok(Array.isArray(summary.cycleHistory));
+  assert.equal(summary.cycleHistory.length, 0);
 });
 
 test("calculateCycleSummary averages provided periods", () => {
@@ -63,6 +66,20 @@ test("calculateCycleSummary averages provided periods", () => {
   ]);
   assert.equal(summary.averagePeriodLength, 6);
   assert.equal(summary.averageCycleLength, 29);
+  assert.equal(summary.cycleHistory.length, 1);
+  assert.deepEqual(summary.cycleHistory[0], {
+    start: "2025-01-01",
+    end: "2025-01-30",
+    length: 29
+  });
+});
+test("calculateCycleSummary skips predicted entries in history", () => {
+  const summary = calculateCycleSummary([
+    { start: "2025-01-01", end: "2025-01-05" },
+    { start: "2025-01-29", predicted: true }
+  ]);
+  assert.equal(summary.averageCycleLength, 28);
+  assert.equal(summary.cycleHistory.length, 0);
 });
 
 test("calculateCycleSummary handles predicted next period", () => {
@@ -93,6 +110,11 @@ test("projectUpcomingPeriods lists future cycles", () => {
   });
   assert.equal(projections.length, 2);
   assert.equal(projections[0], "2025-01-29");
+});
+
+test("formatDisplayDate formats dd/MM/yyyy", () => {
+  assert.equal(formatDisplayDate("2025-02-07"), "07/02/2025");
+  assert.equal(formatDisplayDate(null), "");
 });
 
 

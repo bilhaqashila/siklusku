@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { gsap } from "gsap";
 import useSiklusStore from "@/stores/useSiklusStore";
 import useSettingsStore from "@/stores/useSettingsStore";
+import CalendarRange from "./CalendarRange";
+import { formatDisplayDate } from "@/lib/siklus/cycleMath";
 import { shallow } from "zustand/shallow";
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
@@ -71,6 +73,7 @@ function calculateDurationDays(start, end) {
 
 function DateStep({ values, errors, onChange }) {
   const today = todayIso();
+  const [simpleMode, setSimpleMode] = useState(false);
   const durationWarning = useMemo(() => {
     const duration = calculateDurationDays(values.lastPeriodStart, values.lastPeriodEnd);
     if (!duration || duration <= 8) {
@@ -78,8 +81,20 @@ function DateStep({ values, errors, onChange }) {
     }
     return "Durasi haidmu lebih dari 8 hari. Kalau ini baru terjadi, coba diskusikan dengan orang dewasa atau tenaga kesehatan yang kamu percaya.";
   }, [values.lastPeriodStart, values.lastPeriodEnd]);
+  const rangeValue = useMemo(
+    () => ({
+      start: values.lastPeriodStart || null,
+      end: values.lastPeriodEnd || null
+    }),
+    [values.lastPeriodStart, values.lastPeriodEnd]
+  );
 
   const endMin = values.lastPeriodStart || undefined;
+
+  function handleRangeChange(nextRange) {
+    onChange("lastPeriodStart", nextRange.start || null);
+    onChange("lastPeriodEnd", nextRange.end || null);
+  }
 
   return (
     <fieldset className="space-y-4" aria-describedby="period-date-hint">
@@ -87,34 +102,62 @@ function DateStep({ values, errors, onChange }) {
       <p id="period-date-hint" className="text-sm text-slate-500">
         Isi tanggal mulai dan selesai haid terakhirmu. Kalau lupa, isi perkiraan terbaikmu ya.
       </p>
-      <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-        Tanggal mulai
-        <input
-          type="date"
-          max={today}
-          value={values.lastPeriodStart || ""}
-          onChange={(event) => onChange("lastPeriodStart", event.target.value)}
-          className="rounded-lg border border-slate-200 px-3 py-2 text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
-        />
-        {errors.lastPeriodStart ? (
-          <span className="text-xs text-red-500">{errors.lastPeriodStart}</span>
-        ) : null}
-      </label>
-      <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-        Tanggal selesai
-        <input
-          type="date"
-          min={endMin}
-          max={today}
-          value={values.lastPeriodEnd || ""}
-          onChange={(event) => onChange("lastPeriodEnd", event.target.value)}
-          className="rounded-lg border border-slate-200 px-3 py-2 text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
-        />
-        <span className="text-xs text-slate-400">Kalau belum selesai, pilih perkiraan terbaikmu.</span>
-        {errors.lastPeriodEnd ? (
-          <span className="text-xs text-red-500">{errors.lastPeriodEnd}</span>
-        ) : null}
-      </label>
+      <div className="flex items-center justify-between text-xs text-slate-500">
+        <span>Pilih rentang haid terakhirmu.</span>
+        <button
+          type="button"
+          className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
+          onClick={() => setSimpleMode((previous) => !previous)}
+          aria-pressed={simpleMode}
+        >
+          {simpleMode ? "Gunakan kalender interaktif" : "Gunakan input sederhana"}
+        </button>
+      </div>
+      {simpleMode ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+            Tanggal mulai
+            <input
+              type="date"
+              max={today}
+              value={values.lastPeriodStart || ""}
+              onChange={(event) => onChange("lastPeriodStart", event.target.value)}
+              className="rounded-lg border border-slate-200 px-3 py-2 text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
+            />
+            {errors.lastPeriodStart ? (
+              <span className="text-xs text-red-500">{errors.lastPeriodStart}</span>
+            ) : null}
+          </label>
+          <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+            Tanggal selesai
+            <input
+              type="date"
+              min={endMin}
+              max={today}
+              value={values.lastPeriodEnd || ""}
+              onChange={(event) => onChange("lastPeriodEnd", event.target.value)}
+              className="rounded-lg border border-slate-200 px-3 py-2 text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
+            />
+            <span className="text-xs text-slate-400">Kalau belum selesai, pilih perkiraan terbaikmu.</span>
+            {errors.lastPeriodEnd ? (
+              <span className="text-xs text-red-500">{errors.lastPeriodEnd}</span>
+            ) : null}
+          </label>
+        </div>
+      ) : (
+        <>
+          <CalendarRange value={rangeValue} onChange={handleRangeChange} max={today} />
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            <span>Mulai: {rangeValue.start ? formatDisplayDate(rangeValue.start) : "Belum dipilih"}</span>
+            <span>{"\u2022"}</span>
+            <span>Selesai: {rangeValue.end ? formatDisplayDate(rangeValue.end) : "Belum dipilih"}</span>
+          </div>
+          <div className="space-y-1 text-xs text-red-500">
+            {errors.lastPeriodStart ? <p>{errors.lastPeriodStart}</p> : null}
+            {errors.lastPeriodEnd ? <p>{errors.lastPeriodEnd}</p> : null}
+          </div>
+        </>
+      )}
       {durationWarning ? <p className="text-xs text-amber-600">{durationWarning}</p> : null}
     </fieldset>
   );

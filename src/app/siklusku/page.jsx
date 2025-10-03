@@ -13,14 +13,15 @@ import MoodDistributionCard from "@/components/siklus/MoodDistributionCard";
 import MoodPatternCard from "@/components/siklus/MoodPatternCard";
 import CycleLengthCard from "@/components/siklus/CycleLengthCard";
 import AchievementsCard from "@/components/siklus/AchievementsCard";
-import { shallow } from "zustand/shallow";
+import LoveLetterModal from "@/components/siklus/LoveLetterModal";
 import useSiklusStore from "@/stores/useSiklusStore";
 import {
   cycleDay,
-  calculatePhase
+  calculatePhase,
+  projectUpcomingPeriods,
+  formatDisplayDate
 } from "@/lib/siklus/cycleMath";
 import { summarizeMoodTrend } from "@/lib/siklus/mood";
-import { projectUpcomingPeriods } from "@/lib/siklus/cycleMath";
 
 const PHASE_ART = {
   menstruation: {
@@ -180,25 +181,36 @@ function normalizeNumber(value, fallback) {
 }
 
 export default function SikluskuPage() {
-  const siklusState = useSiklusStore((state) => state, shallow);
-  const {
-    hydrated,
-    hydrate,
-    onboardingCompleted,
-    onboardingData,
-    moodLogs,
-    goals,
-    cycleSummary,
-    streak,
-    consistency,
-    setOnboardingCompleted,
-    resetOnboardingData
-  } = siklusState;
+  const hydrate = useSiklusStore((state) => state.hydrate);
+  const hydrated = useSiklusStore((state) => state.hydrated);
+  const onboardingCompleted = useSiklusStore((state) => state.onboardingCompleted);
+  const onboardingData = useSiklusStore((state) => state.onboardingData);
+  const moodLogs = useSiklusStore((state) => state.moodLogs);
+  const goals = useSiklusStore((state) => state.goals);
+  const cycleSummary = useSiklusStore((state) => state.cycleSummary);
+  const streak = useSiklusStore((state) => state.streak);
+  const consistency = useSiklusStore((state) => state.consistency);
+  const setOnboardingCompleted = useSiklusStore((state) => state.setOnboardingCompleted);
+  const resetOnboardingData = useSiklusStore((state) => state.resetOnboardingData);
+  const loveLetterShown = useSiklusStore((state) => state.loveLetterShown);
+  const markLoveLetterShown = useSiklusStore((state) => state.markLoveLetterShown);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [loveLetterOpen, setLoveLetterOpen] = useState(false);
   const [flow, setFlow] = useState("loading");
 
   useEffect(() => {
     hydrate();
   }, [hydrate]);
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setPrefersReducedMotion(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
 
   useEffect(() => {
     if (!hydrated) {
@@ -206,11 +218,54 @@ export default function SikluskuPage() {
     }
     setFlow(onboardingCompleted ? "dashboard" : "gate");
   }, [hydrated, onboardingCompleted]);
+  useEffect(() => {
+    if (!hydrated) {
+      return;
+    }
+    if (onboardingCompleted && !loveLetterShown) {
+      setLoveLetterOpen(true);
+    }
+  }, [hydrated, onboardingCompleted, loveLetterShown]);
 
   const isHydrating = !hydrated || flow === "loading";
   const placeholderState = isHydrating ? "loading" : flow !== "dashboard" ? flow : null;
   const showPlaceholder = Boolean(placeholderState);
   const moodSummary = useMemo(() => summarizeMoodTrend(moodLogs), [moodLogs]);
+  const cycleTrendPoints = useMemo(() => {
+    const history = Array.isArray(cycleSummary.cycleHistory) ? cycleSummary.cycleHistory : [];
+    if (!history.length) {
+      return [
+        {
+          label: "Saat ini",
+          value: cycleSummary.averageCycleLength
+        }
+      ];
+    }
+    const formatter = new Intl.DateTimeFormat("id-ID", { month: "short" });
+    const points = history
+      .map((item) => {
+        const reference = item.end || item.start;
+        const parsed = reference ? new Date(reference) : null;
+        if (!parsed || Number.isNaN(parsed.getTime())) {
+          return null;
+        }
+        const label = formatter.format(parsed) + " " + String(parsed.getFullYear()).slice(-2);
+        return {
+          label,
+          value: item.length
+        };
+      })
+      .filter(Boolean);
+    if (!points.length) {
+      return [
+        {
+          label: "Saat ini",
+          value: cycleSummary.averageCycleLength
+        }
+      ];
+    }
+    return points.slice(-6);
+  }, [cycleSummary]);
   const upcomingPeriods = useMemo(() => {
     if (!onboardingData.lastPeriodStart) {
       return [];
@@ -250,6 +305,11 @@ export default function SikluskuPage() {
       periodLength: safePeriodLength
     };
   }, [onboardingData]);
+
+  function handleLoveLetterClose() {
+    markLoveLetterShown();
+    setLoveLetterOpen(false);
+  }
 
   function handleGuideComplete() {
     resetOnboardingData();
@@ -415,14 +475,7 @@ export default function SikluskuPage() {
           <MoodDistributionCard />
           <div className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Tren panjang siklus</h3>
-            <CycleTrendChart
-              points={[
-                {
-                  label: "Saat ini",
-                  value: cycleSummary.averageCycleLength
-                }
-              ]}
-            />
+            <CycleTrendChart points={cycleTrendPoints} />
           </div>
         </section>
 
@@ -442,12 +495,15 @@ export default function SikluskuPage() {
           <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Periode berikutnya</h3>
           {upcomingPeriods.length ? (
             <ul className="mt-3 space-y-2 text-sm text-slate-600">
-              {upcomingPeriods.map((date) => (
-                <li key={date} className="flex items-center justify-between rounded-2xl bg-pink-50 px-4 py-3">
-                  <span>Perkiraan mulai</span>
-                  <span className="font-semibold text-pink-600">{date}</span>
-                </li>
-              ))}
+              {upcomingPeriods.map((isoDate) => {
+                const displayDate = formatDisplayDate(isoDate) || isoDate;
+                return (
+                  <li key={isoDate} className="flex items-center justify-between rounded-2xl bg-pink-50 px-4 py-3">
+                    <span>Perkiraan mulai</span>
+                    <span className="font-semibold text-pink-600">{displayDate}</span>
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Lengkapi data onboarding untuk dapat prediksi periode berikutnya.</p>
@@ -474,6 +530,11 @@ export default function SikluskuPage() {
 
   return (
     <main className="container mx-auto max-w-4xl space-y-8 px-4 py-10 dark:text-slate-100">
+      <LoveLetterModal
+        open={loveLetterOpen}
+        onClose={handleLoveLetterClose}
+        reducedMotion={prefersReducedMotion}
+      />
       {showPlaceholder ? <OnboardingPlaceholder state={placeholderState} /> : null}
 
       {hydrated ? (
@@ -488,8 +549,6 @@ export default function SikluskuPage() {
     </main>
   );
 }
-
-
 
 
 
