@@ -6,16 +6,20 @@ import { Droplet, Moon, Sparkles, Sprout } from "lucide-react";
 import OnboardingGate from "@/components/siklus/OnboardingGate";
 import FirstPeriodGuide from "@/components/siklus/FirstPeriodGuide";
 import CycleOnboarding from "@/components/siklus/CycleOnboarding";
-import MoodPieChart from "@/components/siklus/charts/MoodPieChart";
 import CycleTrendChart from "@/components/siklus/charts/CycleTrendChart";
+import MoodLogger from "@/components/siklus/MoodLogger";
 import ChartExportButton from "@/components/siklus/charts/ChartExportButton";
+import MoodDistributionCard from "@/components/siklus/MoodDistributionCard";
+import MoodPatternCard from "@/components/siklus/MoodPatternCard";
+import CycleLengthCard from "@/components/siklus/CycleLengthCard";
+import AchievementsCard from "@/components/siklus/AchievementsCard";
 import { shallow } from "zustand/shallow";
 import useSiklusStore from "@/stores/useSiklusStore";
 import {
   cycleDay,
   calculatePhase
 } from "@/lib/siklus/cycleMath";
-import { calculateMoodDistribution, summarizeMoodTrend } from "@/lib/siklus/mood";
+import { summarizeMoodTrend } from "@/lib/siklus/mood";
 import { projectUpcomingPeriods } from "@/lib/siklus/cycleMath";
 
 const PHASE_ART = {
@@ -185,6 +189,8 @@ export default function SikluskuPage() {
     moodLogs,
     goals,
     cycleSummary,
+    streak,
+    consistency,
     setOnboardingCompleted,
     resetOnboardingData
   } = siklusState;
@@ -204,8 +210,6 @@ export default function SikluskuPage() {
   const isHydrating = !hydrated || flow === "loading";
   const placeholderState = isHydrating ? "loading" : flow !== "dashboard" ? flow : null;
   const showPlaceholder = Boolean(placeholderState);
-
-  const moodDistribution = useMemo(() => calculateMoodDistribution(moodLogs), [moodLogs]);
   const moodSummary = useMemo(() => summarizeMoodTrend(moodLogs), [moodLogs]);
   const upcomingPeriods = useMemo(() => {
     if (!onboardingData.lastPeriodStart) {
@@ -390,16 +394,25 @@ export default function SikluskuPage() {
             <p className="mt-2 text-3xl font-semibold text-slate-800 dark:text-slate-100">{cycleSummary.averagePeriodLength} hari</p>
           </article>
           <article className="rounded-2xl border border-pink-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Mood dominan</h3>
-            <p className="mt-2 text-3xl font-semibold capitalize text-slate-800 dark:text-slate-100">{moodSummary.dominantMood}</p>
+            <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Streak pencatatan</h3>
+            <p className="mt-2 text-3xl font-semibold text-slate-800 dark:text-slate-100">{streak} hari</p>
+            <div className="mt-2">
+              <div className="flex justify-between text-xs mb-1">
+                <span>Konsistensi</span>
+                <span>{consistency}%</span>
+              </div>
+              <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden dark:bg-slate-700">
+                <div 
+                  className="h-full bg-pink-500 rounded-full" 
+                  style={{ width: `${consistency}%` }}
+                ></div>
+              </div>
+            </div>
           </article>
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Mood 30 hari terakhir</h3>
-            <MoodPieChart data={moodDistribution} />
-          </div>
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <MoodDistributionCard />
           <div className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Tren panjang siklus</h3>
             <CycleTrendChart
@@ -412,6 +425,18 @@ export default function SikluskuPage() {
             />
           </div>
         </section>
+
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+           <MoodPatternCard />
+           <CycleLengthCard />
+         </section>
+         
+         <section className="mb-6">
+           <AchievementsCard />
+         </section>
+
+        {/* Add MoodLogger component */}
+        <MoodLogger />
 
         <section className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Periode berikutnya</h3>
@@ -463,6 +488,8 @@ export default function SikluskuPage() {
     </main>
   );
 }
+
+
 
 
 

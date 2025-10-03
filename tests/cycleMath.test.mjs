@@ -65,6 +65,15 @@ test("calculateCycleSummary averages provided periods", () => {
   assert.equal(summary.averageCycleLength, 29);
 });
 
+test("calculateCycleSummary handles predicted next period", () => {
+  const summary = calculateCycleSummary([
+    { start: "2025-01-01", end: "2025-01-06" },
+    { start: "2025-01-31" }
+  ]);
+  assert.equal(summary.averagePeriodLength, 6);
+  assert.equal(summary.averageCycleLength, 30);
+});
+
 test("buildCycleTimeline normalizes phases", () => {
   const timeline = buildCycleTimeline({
     lastPeriodStart: "2025-01-01",
@@ -85,3 +94,5 @@ test("projectUpcomingPeriods lists future cycles", () => {
   assert.equal(projections.length, 2);
   assert.equal(projections[0], "2025-01-29");
 });
+
+

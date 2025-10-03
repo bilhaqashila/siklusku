@@ -1,4 +1,4 @@
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+﻿const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 function normalizeDate(value) {
   const date = value instanceof Date ? value : new Date(value);
@@ -240,3 +240,7 @@ export function projectUpcomingPeriods({
 }
 
 export { toDate };
+
+
+
+

@@ -1,4 +1,4 @@
-import { toDate } from "./cycleMath";
+import { toDate } from "./cycleMath.js";
 
 const KNOWN_MOODS = [
   "happy",
@@ -11,32 +11,66 @@ const KNOWN_MOODS = [
   "crampy"
 ];
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 export function normalizeMoodEntry(entry = {}) {
-  const date = toDate(entry.date) || new Date();
-  const id = entry.id || `${date.toISOString()}-${entry.mood || "unknown"}`;
+  const rawDate = toDate(entry.date) || new Date();
+  const isoDate = rawDate.toISOString().slice(0, 10);
   const mood = KNOWN_MOODS.includes(entry.mood) ? entry.mood : "neutral";
+  const noteValue = typeof entry.note === "string"
+    ? entry.note.trim()
+    : typeof entry.notes === "string"
+    ? entry.notes.trim()
+    : "";
+  const emojiValue = typeof entry.emoji === "string" ? entry.emoji : null;
+  const symptoms = Array.isArray(entry.symptoms) ? entry.symptoms.slice(0, 8) : [];
 
   return {
-    id,
-    date: date.toISOString().slice(0, 10),
+    id: entry.id || `${rawDate.toISOString()}-${mood}`,
+    date: isoDate,
     mood,
-    notes: typeof entry.notes === "string" ? entry.notes.trim() : "",
-    symptoms: Array.isArray(entry.symptoms) ? entry.symptoms.slice(0, 8) : []
+    note: noteValue,
+    notes: noteValue,
+    emoji: emojiValue,
+    symptoms
   };
 }
 
-export function calculateMoodDistribution(entries = []) {
-  const base = KNOWN_MOODS.reduce((acc, mood) => {
+export function calculateMoodDistribution(entries = [], options = {}) {
+  const { days, referenceDate } = options || {};
+  const normalizedEntries = entries.map((entry) => normalizeMoodEntry(entry));
+  const distribution = KNOWN_MOODS.reduce((acc, mood) => {
     acc[mood] = 0;
     return acc;
   }, {});
 
-  entries.forEach((entry) => {
-    const normalized = normalizeMoodEntry(entry);
-    base[normalized.mood] += 1;
+  let startTime = null;
+  let endTime = null;
+
+  if (typeof days === "number" && days > 0) {
+    const reference = referenceDate ? toDate(referenceDate) : toDate(new Date());
+    if (reference) {
+      endTime = reference.getTime();
+      startTime = endTime - (days - 1) * MS_PER_DAY;
+    }
+  }
+
+  normalizedEntries.forEach((entry) => {
+    if (startTime !== null && endTime !== null) {
+      const entryDate = toDate(entry.date);
+      if (!entryDate) {
+        return;
+      }
+      const entryTime = entryDate.getTime();
+      if (entryTime < startTime || entryTime > endTime) {
+        return;
+      }
+    }
+
+    distribution[entry.mood] += 1;
   });
 
-  return base;
+  return distribution;
 }
 
 export function groupMoodByDate(entries = []) {
@@ -58,15 +92,19 @@ export function summarizeMoodTrend(entries = []) {
     };
   }
 
-  const distribution = calculateMoodDistribution(entries);
+  const normalizedEntries = entries.map((entry) => normalizeMoodEntry(entry));
+  const distribution = normalizedEntries.reduce((acc, entry) => {
+    acc[entry.mood] = (acc[entry.mood] || 0) + 1;
+    return acc;
+  }, {});
+
   const dominantMood = Object.entries(distribution)
     .sort((a, b) => b[1] - a[1])[0][0];
 
   let streak = 0;
   let previousMood = null;
 
-  entries
-    .map((entry) => normalizeMoodEntry(entry))
+  normalizedEntries
     .sort((a, b) => (a.date < b.date ? -1 : 1))
     .forEach((entry) => {
       if (entry.mood === previousMood) {
@@ -84,3 +122,6 @@ export function summarizeMoodTrend(entries = []) {
 }
 
 export { KNOWN_MOODS };
+
+
+

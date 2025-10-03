@@ -13,6 +13,15 @@ function buildArc(startAngle, endAngle, radius, center) {
   return `M ${center} ${center} L ${startX} ${startY} A ${radius} ${radius} 0 ${largeArc} 1 ${endX} ${endY} Z`;
 }
 
+// Define colors that match MoodLogger
+const MOOD_COLORS = {
+  "happy": "#22c55e",    // Green
+  "neutral": "#3b82f6",  // Blue
+  "sad": "#8b5cf6",      // Purple
+  "tired": "#ec4899",    // Pink
+  "energized": "#f97316" // Orange
+};
+
 export default function MoodPieChart({ data, size = 220, colors }) {
   const entries = useMemo(() => {
     if (!data) {
@@ -25,13 +34,15 @@ export default function MoodPieChart({ data, size = 220, colors }) {
       const startAngle = currentAngle;
       const endAngle = currentAngle + portion * TAU;
       currentAngle = endAngle;
+      
+      // Use consistent colors from our defined MOOD_COLORS
       return {
         mood,
         value,
         startAngle,
         endAngle,
         color:
-          colors?.[mood] ||
+          colors?.[mood] || MOOD_COLORS[mood] ||
           ["#f9a8d4", "#f97316", "#facc15", "#22c55e", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6"][index % 8]
       };
     });
