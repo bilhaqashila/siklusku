@@ -26,7 +26,8 @@ const DEFAULT_VALUES = {
   [STORAGE_KEYS.loveLetterShownOnce]: false,
   [STORAGE_KEYS.settings]: {
     nudgesEnabled: true,
-    reducedMotion: false
+    reducedMotion: false,
+    lastNudgeShownDate: null
   }
 };
 
@@ -40,7 +41,12 @@ const VALIDATORS = {
   [STORAGE_KEYS.goals]: (value) => Array.isArray(value),
   [STORAGE_KEYS.loveLetterShownOnce]: (value) => typeof value === "boolean",
   [STORAGE_KEYS.settings]: (value) =>
-    value && typeof value === "object" && typeof value.nudgesEnabled === "boolean"
+    value && typeof value === "object" &&
+    typeof value.nudgesEnabled === "boolean" &&
+    typeof value.reducedMotion === "boolean" &&
+    (value.lastNudgeShownDate === null ||
+      value.lastNudgeShownDate === undefined ||
+      typeof value.lastNudgeShownDate === "string")
 };
 
 function hasWindow() {

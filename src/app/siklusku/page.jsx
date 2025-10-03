@@ -1,20 +1,26 @@
-"use client";
+﻿"use client";
 
-import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
-import { Droplet, Moon, Sparkles, Sprout } from "lucide-react";
+import dynamic from "next/dynamic";
+import { useEffect, useMemo, useRef, useState } from "react";
+import DropletIcon from "lucide-react/dist/esm/icons/droplet";
+import MoonIcon from "lucide-react/dist/esm/icons/moon";
+import SparklesIcon from "lucide-react/dist/esm/icons/sparkles";
+import SproutIcon from "lucide-react/dist/esm/icons/sprout";
 import OnboardingGate from "@/components/siklus/OnboardingGate";
 import FirstPeriodGuide from "@/components/siklus/FirstPeriodGuide";
 import CycleOnboarding from "@/components/siklus/CycleOnboarding";
-import CycleTrendChart from "@/components/siklus/charts/CycleTrendChart";
-import MoodLogger from "@/components/siklus/MoodLogger";
-import ChartExportButton from "@/components/siklus/charts/ChartExportButton";
+import MoodLogger, { MOOD_OPTIONS } from "@/components/siklus/MoodLogger";
+import ConsistencyCard from "@/components/siklus/ConsistencyCard";
 import MoodDistributionCard from "@/components/siklus/MoodDistributionCard";
 import MoodPatternCard from "@/components/siklus/MoodPatternCard";
 import CycleLengthCard from "@/components/siklus/CycleLengthCard";
 import AchievementsCard from "@/components/siklus/AchievementsCard";
 import LoveLetterModal from "@/components/siklus/LoveLetterModal";
 import useSiklusStore from "@/stores/useSiklusStore";
+import { gsap } from "gsap";
+import { attachRipple } from "@/lib/siklus/microInteractions";
+import useSettingsStore from "@/stores/useSettingsStore";
+import { shouldShowDailyMoodNudge, getTodayKey } from "@/lib/siklus/nudges";
 import {
   cycleDay,
   calculatePhase,
@@ -23,17 +29,56 @@ import {
 } from "@/lib/siklus/cycleMath";
 import { summarizeMoodTrend } from "@/lib/siklus/mood";
 
+const CycleTrendChart = dynamic(() => import("@/components/siklus/charts/CycleTrendChart"), {
+  ssr: false,
+  loading: () => <ChartSkeleton label="grafik tren siklus" />
+});
+
+const ChartExportButton = dynamic(() => import("@/components/siklus/charts/ChartExportButton"), {
+  ssr: false,
+  loading: () => <ExportButtonFallback />
+});
+
+function ChartSkeleton({ label }) {
+  return (
+    <div className="flex h-48 w-full items-center justify-center rounded-3xl border border-dashed border-pink-200 bg-white/70 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+      Memuat {label}...
+    </div>
+  );
+}
+
+function ExportButtonFallback() {
+  return (
+    <button
+      type="button"
+      disabled
+      className="relative inline-flex items-center justify-center rounded-full bg-pink-400 px-6 py-2 text-sm font-semibold text-white opacity-70 shadow-sm"
+    >
+      Menyiapkan export...
+    </button>
+  );
+}
+
+const MOOD_META = MOOD_OPTIONS.reduce((acc, option) => {
+  acc[option.mood] = { label: option.label, color: option.chartColor || '#ec4899' };
+  return acc;
+}, {});
+
 const PHASE_ART = {
   menstruation: {
-    image: {
-      src: "/image/Teen%20Girl%20With%20Hot%20Tea%20(Menstrual%20Phase%20Illustration).png",
-      alt: "Ilustrasi remaja minum teh hangat untuk fase menstruasi"
+    imageAlt: "Ilustrasi remaja minum teh hangat untuk fase menstruasi",
+    palette: {
+      primary: "#fbcfe8",
+      secondary: "#f9a8d4",
+      accent: "#fde4f2",
+      highlight: "#f8b4d9",
+      icon: "#db2777"
     },
     gradient: "from-rose-100 via-white to-rose-50",
     gradientDark: "dark:from-rose-950 dark:via-slate-950 dark:to-slate-900",
     badge: "bg-rose-100 text-rose-600",
     badgeDark: "dark:bg-rose-900/40 dark:text-rose-200 dark:border dark:border-rose-800/50",
-    icon: Droplet,
+    icon: DropletIcon,
     name: "Menstruasi",
     description: "Fase pembersihan alami tubuhmu",
     tips: [
@@ -41,15 +86,19 @@ const PHASE_ART = {
     ]
   },
   follicular: {
-    image: {
-      src: "/image/Teen%20Girl%20With%20Flower%20(Follicular%20Phase%20Illustration).png",
-      alt: "Ilustrasi remaja membawa bunga"
+    imageAlt: "Ilustrasi remaja membawa bunga",
+    palette: {
+      primary: "#bbf7d0",
+      secondary: "#86efac",
+      accent: "#dcfce7",
+      highlight: "#34d399",
+      icon: "#047857"
     },
     gradient: "from-green-100 via-white to-emerald-50",
     gradientDark: "dark:from-emerald-950 dark:via-slate-950 dark:to-slate-900",
     badge: "bg-emerald-100 text-emerald-600",
     badgeDark: "dark:bg-emerald-900/40 dark:text-emerald-200 dark:border dark:border-emerald-800/50",
-    icon: Sprout,
+    icon: SproutIcon,
     name: "Folikuler",
     description: "Masa pemulihan dan pertumbuhan sel baru",
     tips: [
@@ -57,15 +106,19 @@ const PHASE_ART = {
     ]
   },
   ovulation: {
-    image: {
-      src: "/image/Teen%20Girl%20With%20Blossom%20(Ovulation%20Phase%20Illustration).png",
-      alt: "Ilustrasi remaja dengan bunga bermekaran"
+    imageAlt: "Ilustrasi remaja dengan bunga bermekaran",
+    palette: {
+      primary: "#fef3c7",
+      secondary: "#fde68a",
+      accent: "#fffbeb",
+      highlight: "#facc15",
+      icon: "#b45309"
     },
     gradient: "from-amber-100 via-white to-yellow-50",
     gradientDark: "dark:from-amber-950 dark:via-slate-950 dark:to-slate-900",
     badge: "bg-amber-100 text-amber-600",
     badgeDark: "dark:bg-amber-900/40 dark:text-amber-200 dark:border dark:border-amber-800/60",
-    icon: Sparkles,
+    icon: SparklesIcon,
     name: "Ovulasi",
     description: "Sel telur sudah siap dibuahi, ini masa subur kamu.",
     tips: [
@@ -74,15 +127,19 @@ const PHASE_ART = {
     psaMessage: "Ovulasi = Masa Subur. Perempuan memiliki peluang kehamilan lebih tinggi di masa ini."
   },
   luteal: {
-    image: {
-      src: "/image/Teen%20Girl%20With%20Moon%20(Luteal%20Phase%20Illustration).png",
-      alt: "Ilustrasi remaja dengan bulan sabit"
+    imageAlt: "Ilustrasi remaja dengan bulan sabit",
+    palette: {
+      primary: "#c7d2fe",
+      secondary: "#a5b4fc",
+      accent: "#e0e7ff",
+      highlight: "#6366f1",
+      icon: "#4338ca"
     },
     gradient: "from-indigo-100 via-white to-slate-50",
     gradientDark: "dark:from-indigo-950 dark:via-slate-950 dark:to-slate-900",
     badge: "bg-indigo-100 text-indigo-600",
     badgeDark: "dark:bg-indigo-900/40 dark:text-indigo-200 dark:border dark:border-indigo-800/50",
-    icon: Moon,
+    icon: MoonIcon,
     name: "Luteal",
     description: "Persiapan tubuh menuju menstruasi berikutnya",
     tips: [
@@ -90,49 +147,113 @@ const PHASE_ART = {
     ]
   },
   unknown: {
-    image: {
-      src: "/image/Teen%20Girl%20Pointing%20at%20Calendar%20(Cycle%20Tracker%20%20Calendar%20Widget).png",
-      alt: "Ilustrasi remaja menunjuk kalender"
+    imageAlt: "Ilustrasi remaja menunjuk kalender",
+    palette: {
+      primary: "#e2e8f0",
+      secondary: "#cbd5f5",
+      accent: "#f1f5f9",
+      highlight: "#94a3b8",
+      icon: "#475569"
     },
     gradient: "from-slate-100 via-white to-slate-50",
     gradientDark: "dark:from-slate-900 dark:via-slate-950 dark:to-slate-900",
     badge: "bg-slate-200 text-slate-700",
     badgeDark: "dark:bg-slate-800/70 dark:text-slate-200 dark:border dark:border-slate-700/60",
-    icon: Sparkles,
+    icon: SparklesIcon,
     name: "Belum ada data",
     description: "Data siklus lengkap bantu kami menyesuaikan tips khusus untukmu.",
     tips: []
   }
 };
 
-const SUPPORT_IMAGE = "/image/Teen%20Girl%20Hugging%20Friend%20(Support%20Banner%20Illustration).png";
-const PLACEHOLDER_IMAGE = "/image/Teen%20Girls%20Reading%20a%20Book%20Together%20(EducationOnboarding%20Guide).png";
+
+const SUPPORT_PALETTE = {
+  primary: "#fecdd3",
+  secondary: "#fda4af",
+  accent: "#ffe4e6",
+  highlight: "#fb7185",
+  icon: "#be123c"
+};
 
 const PLACEHOLDER_COPY = {
   loading: {
     title: "Menyiapkan ruangmu",
     message: "Kami sedang memuat data onboarding supaya pengalamanmu tetap personal dan aman di perangkat ini.",
-    showPulse: true
+    showPulse: true,
+    illustration: {
+      alt: "Ilustrasi pengisian data sedang dimuat",
+      icon: SparklesIcon,
+      palette: {
+        primary: "#fbcfe8",
+        secondary: "#f9a8d4",
+        accent: "#fde4f2",
+        highlight: "#f472b6",
+        icon: "#be185d"
+      },
+      id: "placeholder-loading"
+    }
   },
   gate: {
     title: "Yuk mulai kenalan",
     message: "Pilih sudah atau belum haid untuk menentukan langkah berikutnya.",
-    showPulse: false
+    showPulse: false,
+    illustration: {
+      alt: "Ilustrasi pilihan sudah atau belum haid",
+      icon: DropletIcon,
+      palette: {
+        primary: "#bfdbfe",
+        secondary: "#93c5fd",
+        accent: "#dbeafe",
+        highlight: "#3b82f6",
+        icon: "#1d4ed8"
+      },
+      id: "placeholder-gate"
+    }
   },
   guide: {
     title: "Pelajari tubuhmu dengan tenang",
     message: "Scroll panduan pertama haid, kamu bisa kembali kapan saja.",
-    showPulse: false
+    showPulse: false,
+    illustration: {
+      alt: "Ilustrasi panduan pertama haid",
+      icon: SproutIcon,
+      palette: {
+        primary: "#bbf7d0",
+        secondary: "#86efac",
+        accent: "#dcfce7",
+        highlight: "#34d399",
+        icon: "#047857"
+      },
+      id: "placeholder-guide"
+    }
   },
   form: {
     title: "Isi data siklusmu",
     message: "Catat tanggal haid, panjang siklus, dan tujuan supaya insight lebih akurat.",
-    showPulse: false
+    showPulse: false,
+    illustration: {
+      alt: "Ilustrasi formulir siklus",
+      icon: SparklesIcon,
+      palette: {
+        primary: "#ddd6fe",
+        secondary: "#c4b5fd",
+        accent: "#ede9fe",
+        highlight: "#8b5cf6",
+        icon: "#6d28d9"
+      },
+      id: "placeholder-form"
+    }
   }
 };
-
 function OnboardingPlaceholder({ state }) {
   const copy = PLACEHOLDER_COPY[state] || PLACEHOLDER_COPY.loading;
+  const illustration = copy.illustration ?? {
+    alt: copy.title,
+    icon: SparklesIcon,
+    palette: PHASE_ART.unknown.palette,
+    id: "placeholder-generic"
+  };
+
   return (
     <section
       className="rounded-[32px] border border-pink-100/70 bg-white/85 p-8 text-center shadow-sm backdrop-blur-sm dark:border-slate-800/60 dark:bg-slate-900/70"
@@ -144,15 +265,14 @@ function OnboardingPlaceholder({ state }) {
         <div className="relative h-28 w-28">
           <div
             className={`absolute inset-0 rounded-full ${copy.showPulse ? "bg-pink-200/70 motion-safe:animate-pulse dark:bg-pink-900/40" : "bg-pink-100/60 dark:bg-pink-900/20"}`}
-            aria-hidden="true"
+            aria-hidden="true" 
           />
-          <Image
-            src={PLACEHOLDER_IMAGE}
-            alt="Ilustrasi remaja membaca"
-            fill
-            priority
-            sizes="112px"
-            className="relative rounded-3xl object-cover shadow-md"
+          <AbstractIllustration
+            alt={illustration.alt}
+            icon={illustration.icon}
+            palette={illustration.palette}
+            id={illustration.id}
+            className="relative z-10 h-full w-full"
           />
         </div>
         <div className="space-y-2">
@@ -172,6 +292,7 @@ function OnboardingPlaceholder({ state }) {
     </section>
   );
 }
+
 function normalizeNumber(value, fallback) {
   const numeric = Number.parseInt(value, 10);
   if (Number.isFinite(numeric) && numeric > 0) {
@@ -180,27 +301,29 @@ function normalizeNumber(value, fallback) {
   return fallback;
 }
 
-export default function SikluskuPage() {
-  const hydrate = useSiklusStore((state) => state.hydrate);
-  const hydrated = useSiklusStore((state) => state.hydrated);
-  const onboardingCompleted = useSiklusStore((state) => state.onboardingCompleted);
-  const onboardingData = useSiklusStore((state) => state.onboardingData);
-  const moodLogs = useSiklusStore((state) => state.moodLogs);
-  const goals = useSiklusStore((state) => state.goals);
-  const cycleSummary = useSiklusStore((state) => state.cycleSummary);
-  const streak = useSiklusStore((state) => state.streak);
-  const consistency = useSiklusStore((state) => state.consistency);
-  const setOnboardingCompleted = useSiklusStore((state) => state.setOnboardingCompleted);
-  const resetOnboardingData = useSiklusStore((state) => state.resetOnboardingData);
-  const loveLetterShown = useSiklusStore((state) => state.loveLetterShown);
-  const markLoveLetterShown = useSiklusStore((state) => state.markLoveLetterShown);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-  const [loveLetterOpen, setLoveLetterOpen] = useState(false);
-  const [flow, setFlow] = useState("loading");
+useEffect(() => {
+  if (typeof document === "undefined" || typeof handleVisibility !== "function") return;
+  document.addEventListener("visibilitychange", handleVisibility);
+  return () => document.removeEventListener("visibilitychange", handleVisibility);
+}, []);
 
   useEffect(() => {
-    hydrate();
-  }, [hydrate]);
+    if (typeof document === "undefined") {
+      return undefined;
+    }
+    const cleanupAll = () => {
+      rippleCleanupsRef.current.forEach((dispose) => dispose());
+      rippleCleanupsRef.current = [];
+    };
+    cleanupAll();
+    if (prefersReducedMotion) {
+      return cleanupAll;
+    }
+    const nodes = Array.from(document.querySelectorAll('[data-ripple="true"]'));
+    rippleCleanupsRef.current = nodes.map((node) => attachRipple(node));
+    return cleanupAll;
+  }, [prefersReducedMotion, flow, loveLetterOpen, showDailyNudge, hydrated]);
+
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
@@ -226,11 +349,57 @@ export default function SikluskuPage() {
       setLoveLetterOpen(true);
     }
   }, [hydrated, onboardingCompleted, loveLetterShown]);
+  useEffect(() => {
+    if (!settingsHydrated || !hydrated || flow !== "dashboard") {
+      if (showDailyNudge) {
+        setShowDailyNudge(false);
+      }
+      return undefined;
+    }
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const evaluate = () => {
+      const now = new Date();
+      const eligible = shouldShowDailyMoodNudge({ now, moodLogs, nudgesEnabled });
+      if (!eligible) {
+        if (showDailyNudge) {
+          setShowDailyNudge(false);
+        }
+        return;
+      }
+      const todayKey = getTodayKey(now);
+      if (lastNudgeShownDate === todayKey) {
+        return;
+      }
+      setShowDailyNudge(true);
+      setLastNudgeShownDate(todayKey);
+    };
+
+    evaluate();
+    const intervalId = window.setInterval(evaluate, 60 * 1000);
+    return () => window.clearInterval(intervalId);
+  }, [settingsHydrated, hydrated, flow, moodLogs, nudgesEnabled, lastNudgeShownDate, showDailyNudge, setLastNudgeShownDate]);
+
 
   const isHydrating = !hydrated || flow === "loading";
   const placeholderState = isHydrating ? "loading" : flow !== "dashboard" ? flow : null;
   const showPlaceholder = Boolean(placeholderState);
   const moodSummary = useMemo(() => summarizeMoodTrend(moodLogs), [moodLogs]);
+  const moodLegend = useMemo(() => {
+    if (!moodDistribution) {
+      return [];
+    }
+    return Object.entries(moodDistribution)
+      .filter(([, count]) => count > 0)
+      .map(([mood, count]) => {
+        const meta = MOOD_META[mood] || { label: mood, color: "#94a3b8" };
+        return { mood, label: meta.label, color: meta.color, count };
+      })
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+  }, [moodDistribution]);
   const cycleTrendPoints = useMemo(() => {
     const history = Array.isArray(cycleSummary.cycleHistory) ? cycleSummary.cycleHistory : [];
     if (!history.length) {
@@ -305,6 +474,26 @@ export default function SikluskuPage() {
       periodLength: safePeriodLength
     };
   }, [onboardingData]);
+
+  function handleNudgeLogNow() {
+    setShowDailyNudge(false);
+    const todayKey = getTodayKey(new Date());
+    if (lastNudgeShownDate !== todayKey) {
+      setLastNudgeShownDate(todayKey);
+    }
+    const target = moodSectionRef.current;
+    if (target) {
+      target.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "start" });
+    }
+  }
+
+  function handleNudgeDismiss() {
+    setShowDailyNudge(false);
+    const todayKey = getTodayKey(new Date());
+    if (lastNudgeShownDate !== todayKey) {
+      setLastNudgeShownDate(todayKey);
+    }
+  }
 
   function handleLoveLetterClose() {
     markLoveLetterShown();
@@ -388,13 +577,12 @@ export default function SikluskuPage() {
             </div>
             <div className="relative hidden h-64 w-64 md:block">
               <div className="absolute inset-0 rounded-full bg-white/70 blur-3xl dark:bg-white/10" aria-hidden="true" />
-              <Image
-                src={phaseMeta.image.src}
-                alt={phaseMeta.image.alt}
-                fill
-                sizes="(max-width: 1024px) 220px, 256px"
-                className="rounded-[28px] object-cover shadow-lg"
-                priority
+              <AbstractIllustration
+                alt={phaseMeta.imageAlt}
+                icon={Icon}
+                palette={phaseMeta.palette}
+                id={`phase-${cycleInsight.phaseKey || "unknown"}`}
+                className="relative z-10 h-full w-full"
               />
             </div>
           </div>
@@ -425,12 +613,12 @@ export default function SikluskuPage() {
               ) : null}
             </div>
             <div className="relative hidden overflow-hidden rounded-3xl bg-pink-50 dark:bg-slate-800 md:flex">
-              <Image
-                src={SUPPORT_IMAGE}
+              <AbstractIllustration
                 alt="Ilustrasi teman saling mendukung"
-                fill
-                sizes="(max-width: 1024px) 220px, 280px"
-                className="object-cover"
+                icon={SparklesIcon}
+                palette={SUPPORT_PALETTE}
+                id="support-banner"
+                className="relative z-10 h-64 w-full"
               />
             </div>
           </div>
@@ -442,9 +630,39 @@ export default function SikluskuPage() {
   function renderDashboard() {
     return (
       <div className="space-y-8">
+        {showDailyNudge ? (
+          <section
+            role="status"
+            aria-live="polite"
+            className="flex flex-col gap-4 rounded-3xl border border-amber-200 bg-amber-50 p-6 text-amber-900 shadow-sm dark:border-amber-500/40 dark:bg-amber-900/20 dark:text-amber-100"
+          >
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="space-y-1">
+                <h3 className="text-base font-semibold">Mau catat mood hari ini?</h3>
+                <p className="text-sm text-amber-800/80 dark:text-amber-100/80">Jam sudah menunjukkan malam. Catat moodmu supaya pola emosimu tetap lengkap.</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleNudgeLogNow}
+                  className="rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500"
+                >
+                  Catat mood sekarang
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNudgeDismiss}
+                  className="rounded-full border border-amber-200 px-4 py-2 text-sm font-medium text-amber-700 transition hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500 dark:border-amber-500/40 dark:text-amber-100"
+                >
+                  Nanti
+                </button>
+              </div>
+            </div>
+          </section>
+        ) : null}
         {renderPhaseHero()}
 
-        <section className="grid gap-4 md:grid-cols-3">
+                <section className="grid gap-4 md:grid-cols-3">
           <article className="rounded-2xl border border-pink-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Rata-rata siklus</h3>
             <p className="mt-2 text-3xl font-semibold text-slate-800 dark:text-slate-100">{cycleSummary.averageCycleLength} hari</p>
@@ -453,22 +671,7 @@ export default function SikluskuPage() {
             <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Rata-rata menstruasi</h3>
             <p className="mt-2 text-3xl font-semibold text-slate-800 dark:text-slate-100">{cycleSummary.averagePeriodLength} hari</p>
           </article>
-          <article className="rounded-2xl border border-pink-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Streak pencatatan</h3>
-            <p className="mt-2 text-3xl font-semibold text-slate-800 dark:text-slate-100">{streak} hari</p>
-            <div className="mt-2">
-              <div className="flex justify-between text-xs mb-1">
-                <span>Konsistensi</span>
-                <span>{consistency}%</span>
-              </div>
-              <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden dark:bg-slate-700">
-                <div 
-                  className="h-full bg-pink-500 rounded-full" 
-                  style={{ width: `${consistency}%` }}
-                ></div>
-              </div>
-            </div>
-          </article>
+          <ConsistencyCard />
         </section>
 
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -489,7 +692,9 @@ export default function SikluskuPage() {
          </section>
 
         {/* Add MoodLogger component */}
-        <MoodLogger />
+        <div ref={moodSectionRef}>
+          <MoodLogger />
+        </div>
 
         <section className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Periode berikutnya</h3>
@@ -522,6 +727,7 @@ export default function SikluskuPage() {
               dominantMood: moodSummary.dominantMood,
               moodEntries: moodLogs.length
             }}
+            legend={moodLegend}
           />
         </div>
       </div>
@@ -529,7 +735,7 @@ export default function SikluskuPage() {
   }
 
   return (
-    <main className="container mx-auto max-w-4xl space-y-8 px-4 py-10 dark:text-slate-100">
+    <main id="main-content" tabIndex="-1" role="main" className="container mx-auto max-w-4xl space-y-8 px-4 py-10 dark:text-slate-100">
       <LoveLetterModal
         open={loveLetterOpen}
         onClose={handleLoveLetterClose}
@@ -538,7 +744,7 @@ export default function SikluskuPage() {
       {showPlaceholder ? <OnboardingPlaceholder state={placeholderState} /> : null}
 
       {hydrated ? (
-        <OnboardingGate open={flow === "gate"} onBelum={() => setFlow("guide")} onSudah={() => setFlow("form")} />
+        <OnboardingGate open={flow === "gate"} onBelum={() => setFlow("guide")} onSudah={() => setFlow("form")} reducedMotion={prefersReducedMotion} />
       ) : null}
 
       {flow === "guide" ? <FirstPeriodGuide onComplete={handleGuideComplete} /> : null}
@@ -549,6 +755,20 @@ export default function SikluskuPage() {
     </main>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

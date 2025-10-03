@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
+import AbstractIllustration from "./AbstractIllustration";
+import HeartIcon from "lucide-react/dist/esm/icons/heart";
 import { gsap } from "gsap";
 
 const focusableSelectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
@@ -15,10 +16,18 @@ const confettiPieces = Array.from({ length: 18 }, (_, index) => ({
   rotation: (index % 2 === 0 ? 1 : -1) * (12 + index * 3)
 }));
 
+const LOVE_LETTER_PALETTE = {
+  primary: "#fdf2f8",
+  secondary: "#fb7185",
+  accent: "#fde8f3",
+  highlight: "#f43f5e",
+  icon: "#be123c"
+};
+
 export default function LoveLetterModal({ open, onClose, reducedMotion }) {
   const overlayRef = useRef(null);
   const [closeEnabled, setCloseEnabled] = useState(false);
-  const [remaining, setRemaining] = useState(5);
+  const [remaining, setRemaining] = useState(3);
 
   useEffect(() => {
     if (!open) {
@@ -140,7 +149,7 @@ export default function LoveLetterModal({ open, onClose, reducedMotion }) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="love-letter-title"
-      aria-describedby="love-letter-body"
+      aria-describedby="love-letter-intro love-letter-message"
     >
       <div className="love-letter-panel relative w-full max-w-2xl overflow-hidden rounded-[32px] border border-pink-100 bg-white/95 shadow-2xl">
         <div className="absolute inset-0 bg-gradient-to-br from-pink-100 via-white to-slate-50" aria-hidden="true" />
@@ -149,10 +158,9 @@ export default function LoveLetterModal({ open, onClose, reducedMotion }) {
             <div className="space-y-2">
               <h2 id="love-letter-title" className="text-3xl font-semibold text-slate-900 text-center">
                 💌 Kamu Mendapat Surat Cinta 💌</h2>
-                {/* <h3 className="text-xl font-semibold text-slate-900">dari: Tubuhmu💖</h3> */}
-              <p id="love-letter-body" className="text-sm leading-relaxed text-slate-600">
+              <p id="love-letter-intro" className="text-sm leading-relaxed text-slate-600">
                 Hai sayangku, aku tubuhmu.</p>
-              <p id="love-letter-body" className="text-sm leading-relaxed text-slate-600">
+              <p id="love-letter-message" className="text-sm leading-relaxed text-slate-600">
                 Setiap bulan, aku membersihkan dan mempersiapkan ruang baru untukmu. Bukan karena ada yang salah, tapi karena aku sehat! Terimakasih sudah merawatku dengan lembut. Kita tumbuh bersama ya? Cukup dengarkan… dan catat.
               </p>
             </div>
@@ -163,22 +171,29 @@ export default function LoveLetterModal({ open, onClose, reducedMotion }) {
               onClick={handleCloseClick}
               disabled={!closeEnabled}
               aria-disabled={!closeEnabled}
+              aria-describedby="love-letter-countdown-message"
             >
               {closeEnabled ? "Mulai Mencatat" : `Tunggu ${remaining}s`}
             </button>
+            <span
+              id="love-letter-countdown-message"
+              aria-live="polite"
+              className="sr-only"
+            >
+              {closeEnabled ? "Tombol siap ditekan" : `Tombol siap dalam ${remaining} detik`}
+            </span>
             </div>
            </div>
            <div className="relative flex items-center justify-center">
-    <div className="absolute inset-0 rounded-[28px]" aria-hidden="true" />
-    <Image
-      src="/image/suratcinta.png"
-      alt="Ilustrasi surat cinta"
-      width={320}
-      height={320}
-      className="relative h-64 w-64 object-contain sm:h-72 sm:w-72"
-      priority
-    />
-         </div>
+            <div className="absolute inset-0 rounded-[28px]" aria-hidden="true" />
+            <AbstractIllustration
+              alt="Ilustrasi surat cinta"
+              icon={HeartIcon}
+              palette={LOVE_LETTER_PALETTE}
+              id="love-letter-art"
+              className="relative z-10 h-64 w-64 sm:h-72 sm:w-72"
+            />
+           </div>
         </div>
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           {confettiStyle.map((style, index) => (

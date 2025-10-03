@@ -1,10 +1,18 @@
 "use client";
 
 import { useMemo } from "react";
+import dynamic from "next/dynamic";
 import useSiklusStore from "@/stores/useSiklusStore";
-import MoodPieChart from "./charts/MoodPieChart";
 import { MOOD_OPTIONS } from "./MoodLogger";
 
+const MoodPieChart = dynamic(() => import("./charts/MoodPieChart"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-48 w-full items-center justify-center rounded-2xl border border-dashed border-pink-200 bg-white/80 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+      Memuat grafik mood...
+    </div>
+  )
+});
 export default function MoodDistributionCard() {
   const moodDistribution = useSiklusStore((state) => state.moodDistribution);
 
@@ -76,4 +84,10 @@ export default function MoodDistributionCard() {
     </div>
   );
 }
+
+
+
+
+
+
 

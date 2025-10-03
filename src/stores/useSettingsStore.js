@@ -18,7 +18,11 @@ const useSettingsStore = create((set, get) => ({
     if (get().hydrated) {
       return;
     }
-    const settings = getLocalValue(STORAGE_KEYS.settings);
+    const stored = getLocalValue(STORAGE_KEYS.settings);
+    const settings = { ...defaultSettings, ...stored };
+    if (stored.lastNudgeShownDate === undefined) {
+      setLocalValue(STORAGE_KEYS.settings, settings);
+    }
     set({ hydrated: true, settings });
   },
 
@@ -32,6 +36,17 @@ const useSettingsStore = create((set, get) => ({
   setReducedMotion: (value) => {
     const current = get().settings;
     const next = { ...current, reducedMotion: Boolean(value) };
+    setLocalValue(STORAGE_KEYS.settings, next);
+    set({ settings: next });
+  },
+
+  setLastNudgeShownDate: (value) => {
+    const normalized = typeof value === "string" && value.length > 0 ? value : null;
+    const current = get().settings;
+    if (current.lastNudgeShownDate === normalized) {
+      return;
+    }
+    const next = { ...current, lastNudgeShownDate: normalized };
     setLocalValue(STORAGE_KEYS.settings, next);
     set({ settings: next });
   }

@@ -6,7 +6,6 @@ import useSiklusStore from "@/stores/useSiklusStore";
 import useSettingsStore from "@/stores/useSettingsStore";
 import CalendarRange from "./CalendarRange";
 import { formatDisplayDate } from "@/lib/siklus/cycleMath";
-import { shallow } from "zustand/shallow";
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
@@ -90,6 +89,10 @@ function DateStep({ values, errors, onChange }) {
   );
 
   const endMin = values.lastPeriodStart || undefined;
+  const startErrorId = errors.lastPeriodStart ? "lastPeriodStart-error" : undefined;
+  const endErrorId = errors.lastPeriodEnd ? "lastPeriodEnd-error" : undefined;
+  const startDescribedBy = ["period-date-hint", startErrorId].filter(Boolean).join(" ");
+  const endDescribedBy = ["period-date-hint", endErrorId].filter(Boolean).join(" ");
 
   function handleRangeChange(nextRange) {
     onChange("lastPeriodStart", nextRange.start || null);
@@ -123,9 +126,11 @@ function DateStep({ values, errors, onChange }) {
               value={values.lastPeriodStart || ""}
               onChange={(event) => onChange("lastPeriodStart", event.target.value)}
               className="rounded-lg border border-slate-200 px-3 py-2 text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
+              aria-invalid={Boolean(errors.lastPeriodStart)}
+              aria-describedby={startDescribedBy || undefined}
             />
             {errors.lastPeriodStart ? (
-              <span className="text-xs text-red-500">{errors.lastPeriodStart}</span>
+              <span id="lastPeriodStart-error" role="alert" className="text-xs text-red-500">{errors.lastPeriodStart}</span>
             ) : null}
           </label>
           <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
@@ -137,24 +142,32 @@ function DateStep({ values, errors, onChange }) {
               value={values.lastPeriodEnd || ""}
               onChange={(event) => onChange("lastPeriodEnd", event.target.value)}
               className="rounded-lg border border-slate-200 px-3 py-2 text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
+              aria-invalid={Boolean(errors.lastPeriodEnd)}
+              aria-describedby={endDescribedBy || undefined}
             />
             <span className="text-xs text-slate-400">Kalau belum selesai, pilih perkiraan terbaikmu.</span>
             {errors.lastPeriodEnd ? (
-              <span className="text-xs text-red-500">{errors.lastPeriodEnd}</span>
+              <span id="lastPeriodEnd-error" role="alert" className="text-xs text-red-500">{errors.lastPeriodEnd}</span>
             ) : null}
           </label>
         </div>
       ) : (
         <>
-          <CalendarRange value={rangeValue} onChange={handleRangeChange} max={today} />
+          <CalendarRange
+            value={rangeValue}
+            onChange={handleRangeChange}
+            max={today}
+            ariaInvalid={Boolean(errors.lastPeriodStart) || Boolean(errors.lastPeriodEnd)}
+            ariaDescribedBy={[startErrorId, endErrorId].filter(Boolean).join(" ") || undefined}
+          />
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
             <span>Mulai: {rangeValue.start ? formatDisplayDate(rangeValue.start) : "Belum dipilih"}</span>
             <span>{"\u2022"}</span>
             <span>Selesai: {rangeValue.end ? formatDisplayDate(rangeValue.end) : "Belum dipilih"}</span>
           </div>
-          <div className="space-y-1 text-xs text-red-500">
-            {errors.lastPeriodStart ? <p>{errors.lastPeriodStart}</p> : null}
-            {errors.lastPeriodEnd ? <p>{errors.lastPeriodEnd}</p> : null}
+          <div className="space-y-1 text-xs text-red-500" aria-live="polite">
+            {errors.lastPeriodStart ? <p id="lastPeriodStart-error" role="alert">{errors.lastPeriodStart}</p> : null}
+            {errors.lastPeriodEnd ? <p id="lastPeriodEnd-error" role="alert">{errors.lastPeriodEnd}</p> : null}
           </div>
         </>
       )}
@@ -165,6 +178,9 @@ function DateStep({ values, errors, onChange }) {
 
 function CycleStep({ values, errors, onChange }) {
   const painScale = Array.from({ length: 10 }, (_, index) => index + 1);
+  const cycleLengthErrorId = errors.cycleLength ? "cycleLength-error" : undefined;
+  const periodLengthErrorId = errors.periodLength ? "periodLength-error" : undefined;
+  const painScaleErrorId = errors.painScale ? "painScale-error" : undefined;
   return (
     <fieldset className="space-y-4">
       <legend className="text-lg font-semibold text-slate-800">Kenalan sama pola siklusmu</legend>
@@ -178,9 +194,11 @@ function CycleStep({ values, errors, onChange }) {
             value={values.cycleLength ?? ""}
             onChange={(event) => onChange("cycleLength", event.target.value)}
             className="rounded-lg border border-slate-200 px-3 py-2 text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
+            aria-invalid={Boolean(errors.cycleLength)}
+            aria-describedby={cycleLengthErrorId || undefined}
           />
           {errors.cycleLength ? (
-            <span className="text-xs text-red-500">{errors.cycleLength}</span>
+            <span id="cycleLength-error" role="alert" className="text-xs text-red-500">{errors.cycleLength}</span>
           ) : null}
         </label>
         <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
@@ -192,9 +210,11 @@ function CycleStep({ values, errors, onChange }) {
             value={values.periodLength ?? ""}
             onChange={(event) => onChange("periodLength", event.target.value)}
             className="rounded-lg border border-slate-200 px-3 py-2 text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
+            aria-invalid={Boolean(errors.periodLength)}
+            aria-describedby={periodLengthErrorId || undefined}
           />
           {errors.periodLength ? (
-            <span className="text-xs text-red-500">{errors.periodLength}</span>
+            <span id="periodLength-error" role="alert" className="text-xs text-red-500">{errors.periodLength}</span>
           ) : null}
         </label>
       </div>
@@ -240,7 +260,7 @@ function CycleStep({ values, errors, onChange }) {
           ))}
         </div>
         {errors.painScale ? (
-          <span className="text-xs text-red-500">{errors.painScale}</span>
+          <span id="painScale-error" role="alert" className="text-xs text-red-500">{errors.painScale}</span>
         ) : null}
       </div>
     </fieldset>
@@ -249,6 +269,8 @@ function CycleStep({ values, errors, onChange }) {
 
 function GoalsStep({ values, errors, onChange }) {
   const selected = Array.isArray(values.goals) ? values.goals : [];
+  const goalsErrorId = errors.goals ? "goals-error" : undefined;
+  const goalsDescribedBy = ["goals-hint", goalsErrorId].filter(Boolean).join(" ");
 
   function toggleGoal(goalId) {
     const isActive = selected.includes(goalId);
@@ -257,7 +279,7 @@ function GoalsStep({ values, errors, onChange }) {
   }
 
   return (
-    <fieldset className="space-y-4" aria-describedby="goals-hint">
+    <fieldset className="space-y-4" aria-describedby={goalsDescribedBy}>
       <legend className="text-lg font-semibold text-slate-800">Tujuanmu pakai Siklusku</legend>
       <p id="goals-hint" className="text-sm text-slate-500">
         Pilih minimal satu. Kami akan menampilkan tips dan fitur yang paling cocok dengan kebutuhanmu.
@@ -289,7 +311,7 @@ function GoalsStep({ values, errors, onChange }) {
           );
         })}
       </div>
-      {errors.goals ? <span className="text-xs text-red-500">{errors.goals}</span> : null}
+      {errors.goals ? <span id="goals-error" role="alert" className="text-xs text-red-500">{errors.goals}</span> : null}
       <p className="text-xs text-slate-400">Kamu bisa ubah pilihan kapan saja di Pengaturan.</p>
     </fieldset>
   );
@@ -308,13 +330,14 @@ function IdentityStep({ values, errors, onChange }) {
           value={values.birthYear ?? ""}
           onChange={(event) => onChange("birthYear", event.target.value)}
           className="rounded-lg border border-slate-200 px-3 py-2 text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500"
-          aria-describedby="birthYearHint"
+          aria-describedby={errors.birthYear ? "birthYearHint birthYear-error" : "birthYearHint"}
+          aria-invalid={Boolean(errors.birthYear)}
         />
         <span id="birthYearHint" className="text-xs text-slate-500">
           Contoh: 2009
         </span>
         {errors.birthYear ? (
-          <span className="text-xs text-red-500">{errors.birthYear}</span>
+          <span id="birthYear-error" role="alert" className="text-xs text-red-500">{errors.birthYear}</span>
         ) : null}
       </label>
     </fieldset>
@@ -376,26 +399,25 @@ function getStepErrors(stepIndex, values) {
 }
 
 export default function CycleOnboarding({ onComplete }) {
-  const siklusState = useSiklusStore((state) => state, shallow);
-  const {
-    onboardingData,
-    updateOnboardingDraft,
-    commitOnboardingData,
-    setOnboardingCompleted
-  } = siklusState;
-  const settingsState = useSettingsStore((state) => state, shallow);
-  const { settings, hydrate } = settingsState;
+  const onboardingData = useSiklusStore((state) => state.onboardingData);
+  const updateOnboardingDraft = useSiklusStore((state) => state.updateOnboardingDraft);
+  const commitOnboardingData = useSiklusStore((state) => state.commitOnboardingData);
+  const setOnboardingCompleted = useSiklusStore((state) => state.setOnboardingCompleted);
+  const settings = useSettingsStore((state) => state.settings);
+  const hydrate = useSettingsStore((state) => state.hydrate);
 
   const [activeStep, setActiveStep] = useState(0);
   const [errors, setErrors] = useState({});
   const cardRef = useRef(null);
+  const stepHeadingRef = useRef(null);
+  const reducedMotion = settings?.reducedMotion ?? false;
 
   useEffect(() => {
     hydrate();
   }, [hydrate]);
 
   useEffect(() => {
-    if (!cardRef.current || settings.reducedMotion) {
+    if (!cardRef.current || reducedMotion) {
       return undefined;
     }
     const ctx = gsap.context(() => {
@@ -405,8 +427,13 @@ export default function CycleOnboarding({ onComplete }) {
         { autoAlpha: 1, y: 0, duration: 0.4, ease: "power2.out" }
       );
     }, cardRef);
-    return () => ctx.revert();
-  }, [activeStep, settings.reducedMotion]);
+        return () => {
+      ctx?.revert();
+    };
+  }, [activeStep, reducedMotion]);
+  useEffect(() => {
+    stepHeadingRef.current?.focus();
+  }, [activeStep]);
 
   const currentValues = useMemo(
     () => ({
@@ -475,14 +502,18 @@ export default function CycleOnboarding({ onComplete }) {
   }
 
   const nextDisabled = Object.keys(stepValidation).length > 0;
+  const liveErrorMessage = Object.values(errors).find((message) => message) || "";
+  const errorMessageId = liveErrorMessage ? id="onboarding-error-message" : undefined;
 
   return (
     <div className="space-y-6" ref={cardRef}>
+      {liveErrorMessage ? (<span className="sr-only">{liveErrorMessage}</span>) : null}
+          {liveErrorMessage} 
       <header className="space-y-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-pink-500">
           Langkah {activeStep + 1} dari {steps.length}
         </p>
-        <h3 className="text-2xl font-semibold text-slate-800">{steps[activeStep].title}</h3>
+        <h3 ref={stepHeadingRef} tabIndex={-1} className="text-2xl font-semibold text-slate-800">{steps[activeStep].title}</h3>
       </header>
       <div className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm">
         <StepComponent values={currentValues} errors={errors} onChange={handleChange} />
@@ -490,17 +521,22 @@ export default function CycleOnboarding({ onComplete }) {
       <div className="flex items-center justify-between">
         <button
           type="button"
-          className="rounded-full border border-slate-200 px-6 py-2 text-sm font-medium text-slate-600 transition hover:scale-[1.01] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500 cursor-pointer disabled:opacity-40"
+          data-ripple="true"
+          className="relative rounded-full border border-slate-200 px-6 py-2 text-sm font-medium text-slate-600 transition-transform duration-200 ease-out hover:shadow-md motion-safe:hover:scale-[1.02] motion-reduce:transform-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500 cursor-pointer disabled:opacity-40 overflow-hidden"
           onClick={handleBack}
           disabled={activeStep === 0}
+          aria-disabled={activeStep === 0}
         >
           Kembali
         </button>
         <button
           type="button"
-          className="rounded-full bg-pink-500 px-6 py-2 text-sm font-semibold text-white shadow-sm transition hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500 cursor-pointer disabled:opacity-40"
+          data-ripple="true"
+          className="relative rounded-full bg-pink-500 px-6 py-2 text-sm font-semibold text-white shadow-sm transition-transform duration-200 ease-out hover:shadow-lg motion-safe:hover:scale-[1.03] motion-reduce:transform-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-500 cursor-pointer disabled:opacity-40 overflow-hidden"
           onClick={handleNext}
           disabled={nextDisabled}
+          aria-disabled={nextDisabled}
+          aria-describedby={errorMessageId}
         >
           {activeStep === steps.length - 1 ? "Selesai" : "Lanjut"}
         </button>

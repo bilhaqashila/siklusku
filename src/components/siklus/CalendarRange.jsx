@@ -54,7 +54,9 @@ export default function CalendarRange({
   onChange,
   max,
   min,
-  className
+  className,
+  ariaInvalid = false,
+  ariaDescribedBy
 }) {
   const today = normalizeInputDate(new Date());
   const maxDate = normalizeInputDate(max) || today;
@@ -319,7 +321,14 @@ export default function CalendarRange({
               <div className="mb-3 flex items-center justify-between">
                 <p className="text-sm font-semibold text-slate-700">{monthFormatter.format(viewDate)}</p>
               </div>
-              <div role="grid" aria-label="Kalender pemilihan rentang haid" className="grid grid-cols-7 gap-1" ref={gridRef}>
+              <div
+                role="grid"
+                aria-label="Kalender pemilihan rentang haid"
+                aria-invalid={ariaInvalid ? "true" : undefined}
+                aria-describedby={ariaDescribedBy}
+                className="grid grid-cols-7 gap-1"
+                ref={gridRef}
+              >
                 {WEEKDAY_LABELS.map((label) => (
                   <div key={label} role="columnheader" className="h-8 text-center text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                     {label}
