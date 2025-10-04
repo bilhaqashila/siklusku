@@ -13,7 +13,7 @@ const GUIDE_SECTIONS = [
     id: "intro",
     title: "Apa itu haid?",
     description:
-      "Haid adalah tanda bahwa tubuhmu sehat dan siap tumbuh jadi perempuan utuh. Haid (menstruasi) merupakan proses alami ketika dinding rahim meluruh dan keluar melalui vagina dalam bentuk darah.",
+      "Haid (atau menstruasi) adalah proses alami di mana tubuh mengeluarkan darah dari rahim. Ini tandanya tubuh kamu sudah tumbuh menjadi perempuan dewasa.",
     accent: "from-pink-100 via-white to-orange-50",
     visual: {
       imageSrc: "/image/placeholder-gate.png",
@@ -22,9 +22,9 @@ const GUIDE_SECTIONS = [
   },
   {
     id: "signs",
-    title: "Kenapa terjadi haid?",
+    title: "Kenapa haid bisa terjadi?",
     description:
-      "Tubuh perempuan setiap bulan mempersiapkan diri untuk kehamilan di rahim. Kalau tidak ada pembuahan, lapisan rahim dilepaskan dan keluar sebagai darah haid.",
+      "Setiap bulan, tubuhmu mempersiapkan rahim untuk kehamilan. Kalau nggak terjadi pembuahan, lapisan rahim dilepaskan dan keluar sebagai darah haid.",
     accent: "from-rose-100 via-white to-purple-50",
     visual: {
       imageSrc: "/image/phase-luteal.png",
@@ -33,9 +33,9 @@ const GUIDE_SECTIONS = [
   },
   {
     id: "prep",
-    title: "Persiapan apa yang bisa dilakukan?",
+    title: "Persiapan apa yang bisa kamu lakukan?",
     description:
-      "Siapkan tas kecil berisi kebutuhan darurat berisi tisu, pembalut, obat nyeri, dan celana dalam. Jangan lupa catat perkiraan tanggal haidmu.",
+      "Siapkan tas kecil berisi: tisu basah, pembalut, obat nyeri, dan celana dalam. Dan catat perkiraan tanggal haidmu biar nggak kaget.",
     accent: "from-amber-100 via-white to-green-50",
     visual: {
       imageSrc: "/image/hero-vaksin.png",
@@ -44,9 +44,9 @@ const GUIDE_SECTIONS = [
   },
   {
     id: "support",
-    title: "Apakah ada tanda-tanda yang muncul menjelang haid?",
+    title: "Apa saja tanda menjelang haid?",
     description:
-      "Ada, kamu bisa mengalami kram perut, punggung pegal-pegal, jerawat, mudah lelah, hingga perubahan suasana hati.",
+      "1-2 minggu sebelum haid kamu mungkin merasakan: kram perut, punggung pegal, jerawatan, mudah lelah, atau mood naik-turun. Semua itu normal! Tapi kalau ganggu aktivitasmu, catat aja di Siklusku. Pelajari polanya dan langsung cari bantuan kalau perlu.",
     accent: "from-blue-100 via-white to-emerald-50",
     visual: {
       imageSrc: "/image/phase-menstruation.png",
@@ -145,7 +145,7 @@ export default function FirstPeriodGuide({ onComplete }) {
           Mari berkenalan dengan tubuhmu!
         </h3>
         <p className="mt-2 text-sm text-slate-600">
-          Satu fase tubuh ini spesial hanya dialami oleh perempuan, dan penting untuk kamu pahami.
+          Haid itu fase alami yang cuma dialami perempuan. Dan kamu gaperlu takut! Sini deh, aku kasih tau segalanya tentang haid.
         </p>
       </header>
 

@@ -134,38 +134,14 @@ export default function OnboardingGate({ open, onBelum, onSudah, reducedMotion =
               />
             </div>
 
-            <span className="inline-flex items-center gap-2 rounded-full bg-pink-100 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-pink-600">
-              RISA - Siklusku
-            </span>
-
             <div>
-              <h2 id="onboarding-title" className="text-3xl font-semibold text-slate-900">
+              <h2 id="onboarding-title" className="text-4xl font-semibold text-slate-900 text-center">
                 Apakah kamu sudah mengalami haid?
               </h2>
-              <p id="onboarding-subtitle" className="mt-3 text-sm text-slate-600">
-                Bangun kebiasaan mencatat siklus menstruasimu di sini!
+              <p id="onboarding-subtitle" className="mt-3 text-m text-slate-600 text-center">
+                Ayo kenali lebih dalam diri kamu dengan membangun kebiasaan jurnaling siklus dan suasana hatimu.
               </p>
             </div>
-
-            <ul
-              id="onboarding-benefits"
-              className="flex flex-col gap-2 text-left text-sm text-slate-600"
-            >
-              <li className="flex items-start gap-2">
-                <span
-                  className="mt-1 inline-flex h-2 w-2 rounded-full bg-pink-500"
-                  aria-hidden="true"
-                />
-                <span>Catat haid, mood, dan gejala dengan aman di perangkatmu.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span
-                  className="mt-1 inline-flex h-2 w-2 rounded-full bg-pink-500"
-                  aria-hidden="true"
-                />
-                <span>Dapatkan informasi personal seputar kesehatan reproduksi.</span>
-              </li>
-            </ul>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
               <button
@@ -190,10 +166,6 @@ export default function OnboardingGate({ open, onBelum, onSudah, reducedMotion =
                 Sudah
               </button>
             </div>
-
-            <p className="text-xs text-slate-500">
-              Kami tidak menyimpan data di server. Semua informasi tersimpan di perangkatmu.
-            </p>
           </div>
 
           {/* Right column illustration */}

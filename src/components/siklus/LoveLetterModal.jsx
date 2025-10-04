@@ -136,19 +136,17 @@ export default function LoveLetterModal({ open, onClose, reducedMotion }) {
         />
         <div className="relative grid gap-6 p-8 sm:grid-cols-[1.1fr_0.9fr] sm:p-10">
           <div className="space-y-4 text-left text-slate-700">
-            <div className="space-y-2">
+            <div className="space-y-4">
               <h2
                 id="love-letter-title"
                 className="text-center text-3xl font-semibold text-slate-900"
               >
                 💌 Kamu Mendapat Surat Cinta 💌
               </h2>
-              <p id="love-letter-intro" className="text-sm leading-relaxed text-slate-600">
-                Hai sayangku, aku tubuhmu.
-              </p>
               <p id="love-letter-message" className="text-sm leading-relaxed text-slate-600">
+                Hai sayang.. aku tubuhmu 💖<br /> <br />
                 Setiap bulan, aku membersihkan dan mempersiapkan ruang baru untukmu. <br />
-                Bukan karena ada yang salah, tapi karena aku sehat! Terimakasih sudah merawatku dengan lembut. <br />
+                Bukan karena ada yang salah, tapi karena aku sehat! <br /> <br /> Terimakasih sudah merawatku dengan lembut. <br />
                 Kita tumbuh bersama ya? Cukup dengarkan… dan catat.
               </p>
             </div>

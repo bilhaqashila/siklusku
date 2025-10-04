@@ -154,7 +154,7 @@ const PLACEHOLDER_COPY = {
   },
   guide: {
     title: "Mengenal Menstruasi Pertamamu",
-    message: "Yuk cek, kamu udah tau semua info tentang haid di bawah ini atau belum?",
+    message: "Baca deh! kamu udah tau semua info tentang haid di bawah ini belum?",
     showPulse: false,
     imageSrc: "/image/placeholder-guide.png",
     imageAlt: "Ilustrasi panduan pertama haid",
@@ -192,7 +192,7 @@ function OnboardingPlaceholder({ state }) {
           <img src={src} alt={alt} className="relative z-10 h-full w-full object-contain" />
         </div>
         <div className="space-y-2">
-          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{copy.title}</h2>
+          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{copy.title}</h2>
           <p className="text-sm text-slate-600 dark:text-slate-300">{copy.message}</p>
         </div>
         {copy.showPulse ? (
@@ -225,6 +225,7 @@ export default function SikluskuPage() {
   const [flow, setFlow] = useState("loading");
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [hasInitializedFlow, setHasInitializedFlow] = useState(false);
 
   const [loveLetterOpen, setLoveLetterOpen] = useState(false);
   const [loveLetterShown, setLoveLetterShown] = useState(false);
@@ -300,10 +301,11 @@ export default function SikluskuPage() {
 
   // flow after hydration
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || hasInitializedFlow) return;
+    setHasInitializedFlow(true);
     setFlow(onboardingCompleted ? "dashboard" : "gate");
     if (onboardingCompleted && !loveLetterShown) setLoveLetterOpen(true);
-  }, [hydrated, onboardingCompleted, loveLetterShown]);
+  }, [hydrated, hasInitializedFlow, onboardingCompleted, loveLetterShown]);
 
   // ripple attach/cleanup
   useEffect(() => {
@@ -410,6 +412,7 @@ export default function SikluskuPage() {
   function handleLoveLetterClose() {
     markLoveLetterShown();
     setLoveLetterOpen(false);
+    setFlow("dashboard");
   }
 
   function resetOnboardingData() {
@@ -428,7 +431,7 @@ export default function SikluskuPage() {
 
   function handleFormComplete() {
     setOnboardingCompleted(true);
-    setFlow("dashboard");
+    setLoveLetterOpen(true);
   }
 
   // ---- UI sections ----
