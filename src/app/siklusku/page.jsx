@@ -225,7 +225,7 @@ export default function SikluskuPage() {
   const [flow, setFlow] = useState("loading");
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [hydrated, setHydrated] = useState(false);
-  const [hasInitializedFlow, setHasInitializedFlow] = useState(false);
+  const hasInitializedFlowRef = useRef(false);
 
   const [loveLetterOpen, setLoveLetterOpen] = useState(false);
   const [loveLetterShown, setLoveLetterShown] = useState(false);
@@ -301,11 +301,11 @@ export default function SikluskuPage() {
 
   // flow after hydration
   useEffect(() => {
-    if (!hydrated || hasInitializedFlow) return;
-    setHasInitializedFlow(true);
+    if (!hydrated || hasInitializedFlowRef.current) return;
+    hasInitializedFlowRef.current = true;
     setFlow(onboardingCompleted ? "dashboard" : "gate");
     if (onboardingCompleted && !loveLetterShown) setLoveLetterOpen(true);
-  }, [hydrated, hasInitializedFlow, onboardingCompleted, loveLetterShown]);
+  }, [hydrated, onboardingCompleted, loveLetterShown]);
 
   // ripple attach/cleanup
   useEffect(() => {
@@ -426,7 +426,7 @@ export default function SikluskuPage() {
   function handleGuideComplete() {
     resetOnboardingData();
     setOnboardingCompleted(true);
-    setFlow("dashboard");
+    setLoveLetterOpen(true);
   }
 
   function handleFormComplete() {
