@@ -2,8 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
-import { Sparkles } from "lucide-react";
-import AbstractIllustration from "./AbstractIllustration";
 
 export default function OnboardingGate({ open, onBelum, onSudah, reducedMotion = false }) {
   const containerRef = useRef(null);
@@ -14,7 +12,6 @@ export default function OnboardingGate({ open, onBelum, onSudah, reducedMotion =
     const overlay = containerRef.current;
     const panel = overlay.querySelector(".gate-panel");
 
-    // ===== Animations =====
     let ctx;
     if (!reducedMotion) {
       ctx = gsap.context((localCtx) => {
@@ -26,7 +23,6 @@ export default function OnboardingGate({ open, onBelum, onSudah, reducedMotion =
           .to(overlay, { autoAlpha: 1, duration: 0.2 })
           .to(panel, { autoAlpha: 1, scale: 1, y: 0, duration: 0.35 }, "<");
 
-        // Hover micro-interaction
         const buttons = panel.querySelectorAll("[data-gate-button][data-ripple='true']");
         buttons.forEach((button) => {
           const hoverTl = gsap.timeline({ paused: true }).to(button, {
@@ -49,7 +45,6 @@ export default function OnboardingGate({ open, onBelum, onSudah, reducedMotion =
           });
         });
 
-        // Pause animations when tab hidden
         const onVis = () =>
           document.hidden ? gsap.globalTimeline.pause() : gsap.globalTimeline.resume();
         document.addEventListener("visibilitychange", onVis);
@@ -61,7 +56,7 @@ export default function OnboardingGate({ open, onBelum, onSudah, reducedMotion =
       panel.style.transform = "none";
     }
 
-    // ===== Focus trap =====
+    // focus trap
     const allCandidates = Array.from(
       overlay.querySelectorAll("button, [href], input, select, textarea, [tabindex]")
     );
@@ -89,7 +84,7 @@ export default function OnboardingGate({ open, onBelum, onSudah, reducedMotion =
         }
       }
       if (event.key === "Escape") {
-        event.preventDefault(); // prevent bubbling
+        event.preventDefault();
       }
     };
 
@@ -118,14 +113,6 @@ export default function OnboardingGate({ open, onBelum, onSudah, reducedMotion =
       .to(overlay, { autoAlpha: 0, duration: 0.18 }, "<0.05");
   }
 
-  const PALETTE = {
-    primary: "#fce7f3",
-    secondary: "#f9a8d4",
-    accent: "#fdf2f8",
-    highlight: "#f472b6",
-    icon: "#be185d",
-  };
-
   return (
     <div
       ref={containerRef}
@@ -140,12 +127,10 @@ export default function OnboardingGate({ open, onBelum, onSudah, reducedMotion =
           {/* Left column */}
           <div className="space-y-5 text-center sm:text-left">
             <div className="mx-auto h-24 w-48 sm:hidden">
-              <AbstractIllustration
+              <img
+                src="/images/onboarding-desktop.png"
                 alt="Kartu sambutan Siklusku"
-                icon={Sparkles}
-                palette={PALETTE}
-                id="gate-mobile"
-                className="h-full w-full"
+                className="h-full w-full object-contain"
               />
             </div>
 
@@ -218,12 +203,10 @@ export default function OnboardingGate({ open, onBelum, onSudah, reducedMotion =
                 className="absolute inset-0 rounded-full bg-pink-100 blur-3xl"
                 aria-hidden="true"
               />
-              <AbstractIllustration
+              <img
+                src="/images/onboarding-desktop.png"
                 alt="Ilustrasi remaja menunjuk kalender menstruasi"
-                icon={Sparkles}
-                palette={PALETTE}
-                id="gate-desktop"
-                className="relative z-10 h-full w-full"
+                className="relative z-10 h-full w-full object-contain"
               />
             </div>
           </div>

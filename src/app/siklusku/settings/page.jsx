@@ -28,7 +28,7 @@ export default function SikluskuSettingsPage() {
 
   return (
     <main className="container mx-auto max-w-3xl space-y-10 px-4 py-10">
-      <header className="rounded-3xl bg-gradient-to-r from-pink-100 via-white to-pink-50 p-6 shadow-sm">
+      <header className="rounded-3xl bg-linear-to-r from-pink-100 via-white to-pink-50 p-6 shadow-sm">
         <h1 className="text-3xl font-semibold text-slate-800">Pengaturan Siklusku</h1>
         <p className="mt-2 text-sm text-slate-600">
           Ubah preferensi dan kelola data yang tersimpan di perangkatmu.

@@ -50,7 +50,7 @@ export default function PromoCarousel() {
         {promos.map((promo, index) => (
           <div
             key={index}
-            className={`min-w-full h-full bg-gradient-to-r ${promo.bgColor} flex items-center justify-center p-6`}
+            className={`min-w-full h-full bg-linear-to-r ${promo.bgColor} flex items-center justify-center p-6`}
           >
             <div className="text-center">
               <h3 className="text-lg font-bold text-[#382b22] mb-2">{promo.title}</h3>

@@ -9,7 +9,7 @@ export default function Home() {
 
       {/** Features */}
       <section className="my-8 mx-auto">
-        <div className="bg-gradient-to-r from-pink-50 to-pink-100 py-8 px-4">
+        <div className="bg-linear-to-r from-pink-50 to-pink-100 py-8 px-4">
           <div className="container mx-auto">
             <div className="grid grid-cols-2 lg:grid-cols-2 text-center gap-8 max-w-4xl mx-auto">
               <div className="p-6 hover:-translate-y-2 duration-300 ease-out">

@@ -152,7 +152,7 @@ export default function LoveLetterModal({ open, onClose, reducedMotion }) {
       aria-describedby="love-letter-intro love-letter-message"
     >
       <div className="love-letter-panel relative w-full max-w-2xl overflow-hidden rounded-[32px] border border-pink-100 bg-white/95 shadow-2xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-pink-100 via-white to-slate-50" aria-hidden="true" />
+        <div className="absolute inset-0 bg-linear-to-br from-pink-100 via-white to-slate-50" aria-hidden="true" />
         <div className="relative grid gap-6 p-8 sm:grid-cols-[1.1fr_0.9fr] sm:p-10">
           <div className="space-y-4 text-left text-slate-700">
             <div className="space-y-2">

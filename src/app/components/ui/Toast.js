@@ -25,7 +25,7 @@ export default function Toast({ message, onAccept, onDecline, show }) {
   return (
     <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-white border-2 border-[#b18597] rounded-xl shadow-lg p-4 max-w-md mx-4">
       <div className="flex items-start gap-3">
-        <div className="flex-shrink-0">
+        <div className="shrink-0">
           <div className="w-6 h-6 bg-[#f9c4d2] rounded-full flex items-center justify-center">
             <span className="text-[#382b22] text-sm">📍</span>
           </div>

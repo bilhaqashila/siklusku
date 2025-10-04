@@ -171,7 +171,7 @@ export default function FirstPeriodGuide({ onComplete }) {
 
   return (
     <div ref={containerRef} className="space-y-8">
-      <header className="rounded-3xl bg-gradient-to-r from-pink-100 via-white to-pink-50 p-6 shadow-sm">
+      <header className="rounded-3xl bg-linear-to-r from-pink-100 via-white to-pink-50 p-6 shadow-sm">
         <p className="text-sm font-semibold uppercase tracking-wide text-pink-500">
           Panduan pertama kali
         </p>
@@ -219,7 +219,7 @@ export default function FirstPeriodGuide({ onComplete }) {
               data-guide-section={section.id}
               className="rounded-2xl border border-pink-100 bg-white p-6 shadow-sm"
             >
-              <div className={`grid gap-4 sm:grid-cols-[auto,1fr] sm:items-center bg-gradient-to-r ${section.accent} rounded-2xl p-5`}>
+              <div className={`grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center bg-linear-to-r ${section.accent} rounded-2xl p-5`}>
                 <div className="relative h-28 w-28 overflow-hidden rounded-2xl bg-white/70 shadow-sm">
                   <AbstractIllustration
                     alt={section.visual.alt}

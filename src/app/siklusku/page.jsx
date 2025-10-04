@@ -2,8 +2,9 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Droplet, Moon, Sparkles, Sprout } from "lucide-react"; // ✅ strict top-level import
+import { Droplet, Moon, Sparkles, Sprout } from "lucide-react";
 
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/siklus/Tabs";
 import OnboardingGate from "@/components/siklus/OnboardingGate";
 import FirstPeriodGuide from "@/components/siklus/FirstPeriodGuide";
 import CycleOnboarding from "@/components/siklus/CycleOnboarding";
@@ -64,7 +65,7 @@ const MOOD_META = MOOD_OPTIONS.reduce((acc, option) => {
   return acc;
 }, {});
 
-// --- Phase metadata (icons OK; images now PNG files) ---
+// ---- Phase metadata (icons OK; images are PNGs) ----
 const PHASE_ART = {
   menstruation: {
     imageAlt: "Ilustrasi remaja minum teh hangat untuk fase menstruasi",
@@ -134,7 +135,7 @@ const PHASE_ART = {
   },
 };
 
-// --- Placeholder copy now uses PNGs ---
+// ---- Placeholder content (PNG) ----
 const PLACEHOLDER_COPY = {
   loading: {
     title: "Menyiapkan ruangmu",
@@ -217,7 +218,7 @@ function normalizeNumber(value, fallback) {
 }
 
 export default function SikluskuPage() {
-  // refs & state
+  // ---- refs & state ----
   const rippleCleanupsRef = useRef([]);
   const moodSectionRef = useRef(null);
 
@@ -231,7 +232,10 @@ export default function SikluskuPage() {
   const [showDailyNudge, setShowDailyNudge] = useState(false);
   const [lastNudgeShownDate, setLastNudgeShownDate] = useState(null);
 
-  // stores
+  // ✅ move tab state to top-level (no hooks inside render helpers)
+  const [activeTab, setActiveTab] = useState("dashboard");
+
+  // ---- stores ----
   const onboardingCompleted = useSiklusStore((s) => s.onboardingCompleted);
   const onboardingData = useSiklusStore((s) => s.onboardingData);
   const moodLogs = useSiklusStore((s) => s.moodLogs);
@@ -245,7 +249,7 @@ export default function SikluskuPage() {
 
   const goals = onboardingData?.goals || [];
 
-  // helpers
+  // ---- helpers ----
   function markLoveLetterShown() {
     try {
       localStorage.setItem("risa:loveLetterShownOnce", "true");
@@ -332,7 +336,7 @@ export default function SikluskuPage() {
     return () => window.clearInterval(id);
   }, [settingsHydrated, hydrated, flow, moodLogs, nudgesEnabled, lastNudgeShownDate, showDailyNudge]);
 
-  // derivations
+  // ---- derivations ----
   const isHydrating = !hydrated || flow === "loading";
   const placeholderState = isHydrating ? "loading" : flow !== "dashboard" ? flow : null;
   const showPlaceholder = Boolean(placeholderState);
@@ -384,7 +388,7 @@ export default function SikluskuPage() {
     return { hasData, day, phaseKey, cycleLength: safeCycle, periodLength: safePeriod };
   }, [onboardingData]);
 
-  // handlers
+  // ---- handlers ----
   function handleNudgeLogNow() {
     setShowDailyNudge(false);
     const todayKey = getTodayKey(new Date());
@@ -407,11 +411,10 @@ export default function SikluskuPage() {
   }
 
   function resetOnboardingData() {
-    resetOnboardingDataAction?.(); // store should persist via setLocalValue
+    resetOnboardingDataAction?.();
   }
 
   function setOnboardingCompleted(val = true) {
-    // adjust if your store signature differs
     setOnboardingCompletedAction?.(val);
   }
 
@@ -426,7 +429,7 @@ export default function SikluskuPage() {
     setFlow("dashboard");
   }
 
-  // UI sections
+  // ---- UI sections ----
   function renderPhaseHero() {
     const phaseMeta = PHASE_ART[cycleInsight.phaseKey] || PHASE_ART.unknown;
     const tips = Array.isArray(phaseMeta.tips) ? phaseMeta.tips : [];
@@ -516,7 +519,6 @@ export default function SikluskuPage() {
                 className="absolute inset-0 rounded-full bg-white/70 blur-3xl dark:bg-white/10"
                 aria-hidden="true"
               />
-              {/* ✅ PNG instead of AbstractIllustration */}
               <img
                 src={phaseMeta.imageSrc}
                 alt={phaseMeta.imageAlt}
@@ -538,7 +540,7 @@ export default function SikluskuPage() {
                   {tips.map((tip) => (
                     <li key={tip} className="flex items-start gap-3">
                       <span
-                        className="mt-1 inline-flex h-2.5 w-2.5 flex-shrink-0 rounded-full bg-pink-400 dark:bg-pink-300"
+                        className="mt-1 inline-flex h-2.5 w-2.5 shrink-0 rounded-full bg-pink-400 dark:bg-pink-300"
                         aria-hidden="true"
                       />
                       <span>{tip}</span>
@@ -558,21 +560,13 @@ export default function SikluskuPage() {
                 </div>
               ) : null}
             </div>
-
-            <div className="relative hidden overflow-hidden rounded-3xl bg-pink-50 dark:bg-slate-800 md:flex">
-              {/* ✅ PNG support banner */}
-              <img
-                src="/images/support-banner.png"
-                alt="Ilustrasi teman saling mendukung"
-                className="relative z-10 h-64 w-full object-contain"
-              />
-            </div>
           </div>
         </section>
       </div>
     );
   }
 
+  // ---- dashboard area with tabs (NO hooks here) ----
   function renderDashboard() {
     return (
       <div className="space-y-8">
@@ -611,84 +605,135 @@ export default function SikluskuPage() {
 
         {renderPhaseHero()}
 
-        <section className="grid gap-4 md:grid-cols-3">
-          <article className="rounded-2xl border border-pink-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Rata-rata siklus</h3>
-            <p className="mt-2 text-3xl font-semibold text-slate-800 dark:text-slate-100">
-              {cycleSummary.averageCycleLength} hari
-            </p>
-          </article>
-          <article className="rounded-2xl border border-pink-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Rata-rata menstruasi</h3>
-            <p className="mt-2 text-3xl font-semibold text-slate-800 dark:text-slate-100">
-              {cycleSummary.averagePeriodLength} hari
-            </p>
-          </article>
-          <ConsistencyCard />
-        </section>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="report">Laporan</TabsTrigger>
+          </TabsList>
 
-        <section className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <MoodDistributionCard />
-          <div className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Tren panjang siklus</h3>
-            <CycleTrendChart points={cycleTrendPoints} />
-          </div>
-        </section>
+          {/* DASHBOARD TAB */}
+          <TabsContent value="dashboard">
+            <div className="space-y-8">
+              <section className="grid gap-4 md:grid-cols-1">
+                <ConsistencyCard />
+              </section>
 
-        <section className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-          <MoodPatternCard />
-          <CycleLengthCard />
-        </section>
+              <section className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <MoodDistributionCard />
+                <div className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                  <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+                    Tren panjang siklus
+                  </h3>
+                  <CycleTrendChart points={cycleTrendPoints} />
+                </div>
+              </section>
 
-        <section className="mb-6">
-          <AchievementsCard />
-        </section>
+              <section className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+                <MoodPatternCard />
+                <CycleLengthCard />
+              </section>
 
-        <div ref={moodSectionRef}>
-          <MoodLogger />
-        </div>
+              <section className="mb-6">
+                <AchievementsCard />
+              </section>
 
-        <section className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Periode berikutnya</h3>
-          {upcomingPeriods.length ? (
-            <ul className="mt-3 space-y-2 text-sm text-slate-600">
-              {upcomingPeriods.map((isoDate) => {
-                const displayDate = formatDisplayDate(isoDate) || isoDate;
-                return (
-                  <li
-                    key={isoDate}
-                    className="flex items-center justify-between rounded-2xl bg-pink-50 px-4 py-3"
-                  >
-                    <span>Perkiraan mulai</span>
-                    <span className="font-semibold text-pink-600">{displayDate}</span>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-              Lengkapi data onboarding untuk dapat prediksi periode berikutnya.
-            </p>
-          )}
-        </section>
+              <div ref={moodSectionRef}>
+                <MoodLogger />
+              </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div>
-            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Simpan ringkasanmu</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Unduh versi PNG untuk disimpan pribadi atau kirim ke seseorang yang kamu percaya.
-            </p>
-          </div>
-          <ChartExportButton
-            stats={{
-              averageCycleLength: cycleSummary.averageCycleLength,
-              averagePeriodLength: cycleSummary.averagePeriodLength,
-              dominantMood: moodSummary.dominantMood,
-              moodEntries: moodLogs.length,
-            }}
-            legend={moodLegend}
-          />
-        </div>
+              <section className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+                  Periode berikutnya
+                </h3>
+                {upcomingPeriods.length ? (
+                  <ul className="mt-3 space-y-2 text-sm text-slate-600">
+                    {upcomingPeriods.map((isoDate) => {
+                      const displayDate = formatDisplayDate(isoDate) || isoDate;
+                      return (
+                        <li
+                          key={isoDate}
+                          className="flex items-center justify-between rounded-2xl bg-pink-50 px-4 py-3"
+                        >
+                          <span>Perkiraan mulai</span>
+                          <span className="font-semibold text-pink-600">{displayDate}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                    Lengkapi data onboarding untuk dapat prediksi periode berikutnya.
+                  </p>
+                )}
+              </section>
+            </div>
+          </TabsContent>
+
+          {/* REPORT TAB */}
+          <TabsContent value="report">
+            <div className="space-y-8">
+              <section className="grid gap-6 lg:grid-cols-2">
+                <MoodDistributionCard />
+                <div className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                  <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+                    Tren panjang siklus
+                  </h3>
+                  <CycleTrendChart points={cycleTrendPoints} />
+                </div>
+              </section>
+
+              <section className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+                <MoodPatternCard />
+                <div className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                  <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+                    Ringkasan cepat
+                  </h3>
+                  <ul className="mt-4 space-y-3 text-sm text-slate-600">
+                    <li className="flex items-center justify-between rounded-2xl bg-pink-50 px-4 py-3">
+                      <span>Rata-rata siklus</span>
+                      <span className="font-semibold text-pink-600">
+                        {cycleSummary.averageCycleLength} hari
+                      </span>
+                    </li>
+                    <li className="flex items-center justify-between rounded-2xl bg-pink-50 px-4 py-3">
+                      <span>Rata-rata menstruasi</span>
+                      <span className="font-semibold text-pink-600">
+                        {cycleSummary.averagePeriodLength} hari
+                      </span>
+                    </li>
+                    <li className="flex items-center justify-between rounded-2xl bg-pink-50 px-4 py-3">
+                      <span>Mood dominan</span>
+                      <span className="font-semibold capitalize text-pink-600">
+                        {moodSummary.dominantMood}
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+              </section>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+                    Unduh laporan
+                  </h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Simpan sebagai PNG untuk dibaca kapan saja.
+                  </p>
+                </div>
+                <ChartExportButton
+                  filename="siklusku-report.png"
+                  stats={{
+                    averageCycleLength: cycleSummary.averageCycleLength,
+                    averagePeriodLength: cycleSummary.averagePeriodLength,
+                    dominantMood: moodSummary.dominantMood,
+                    moodEntries: moodLogs.length,
+                  }}
+                  legend={moodLegend}
+                />
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     );
   }
