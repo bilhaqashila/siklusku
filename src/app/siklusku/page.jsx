@@ -154,14 +154,14 @@ const PLACEHOLDER_COPY = {
   },
   guide: {
     title: "Mengenal Menstruasi Pertamamu",
-    message: "Baca deh! kamu udah tau semua info tentang haid di bawah ini belum?",
+    message: "Baca deh! kamu udah tau semua info haid di bawah ini belum?",
     showPulse: false,
     imageSrc: "/image/placeholder-guide.png",
     imageAlt: "Ilustrasi panduan pertama haid",
   },
   form: {
     title: "Isi data siklusmu",
-    message: "Catat tanggal haid, panjang siklus, dan tujuan supaya insight lebih akurat.",
+    message: "Catat tanggal haid, panjang siklus, dan gejala haid kamu untuk mendapatkan laporan kesehatan reproduksi.",
     showPulse: false,
     imageSrc: "/image/placeholder-form.png",
     imageAlt: "Ilustrasi formulir siklus",
@@ -536,7 +536,7 @@ export default function SikluskuPage() {
         <section className="rounded-[28px] border border-pink-100 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-700/60 dark:bg-slate-900">
           <div className="space-y-4 text-left">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-              Tips Spesial Untukmu :
+              Tips spesial untukmu:
             </h2>
 
             {showTips ? (
@@ -604,15 +604,12 @@ export default function SikluskuPage() {
           <TabsContent value="dashboard">
             <div className="space-y-8">
               {/* 1) Consistency */}
-              <section className="grid gap-4 md:grid-cols-1">
+              <section className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
                 <ConsistencyCard />
-              </section>
-
-              {/* 2) Upcoming Periods (only if has data) */}
               {hasUpcoming ? (
                 <section className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                   <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-                    Periode berikutnya
+                    Perkiraan tanggal haidmu berikutnya
                   </h3>
                   <ul className="mt-3 space-y-2 text-sm text-slate-600">
                     {upcomingPeriods.map((isoDate) => {
@@ -622,14 +619,14 @@ export default function SikluskuPage() {
                           key={isoDate}
                           className="flex items-center justify-between rounded-2xl bg-pink-50 px-4 py-3"
                         >
-                          <span>Perkiraan mulai</span>
-                          <span className="font-semibold text-pink-600">{displayDate}</span>
+                          <span className="font-semibold items-center text-pink-600">{displayDate}</span>
                         </li>
                       );
                     })}
-                  </ul>
+                  </ul> 
                 </section>
               ) : null}
+                </section>
 
               {/* 3) Mood Logger */}
               <div ref={moodSectionRef}>

@@ -43,7 +43,7 @@ export default function   HeroSection() {
     <section ref={heroRef} className="container my-4 mx-auto" id="hero">
         <div className="p-4">
         <h1 className="text-3xl md:text-4xl text-center font-bold mb-4 md:mb-6 hero-title opacity-0">Siklusku, Sahabat Terbaikmu</h1>
-        <p className="text-center text-gray-600 leading-6 mb-8 max-w-2xl mx-auto hero-text opacity-0">Belajar tentang pubertas, cinta, dan kesehatan reproduksi dengan Siklusku : karena mengenal diri sendiri adalah langkah pertama melindungi diri</p>
+        <p className="text-center text-gray-600 leading-6 mb-8 max-w-2xl mx-auto hero-text opacity-0">Belajar tentang pubertas, cinta, dan kesehatan reproduksi dengan Siklusku: karena mengenal diri sendiri adalah langkah pertama melindungi diri</p>
         
         <div className="w-fit mx-auto mb-12 hero-button opacity-0">
             <Link href="/siklusku">

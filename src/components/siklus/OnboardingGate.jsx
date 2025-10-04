@@ -139,7 +139,8 @@ export default function OnboardingGate({ open, onBelum, onSudah, reducedMotion =
                 Apakah kamu sudah mengalami haid?
               </h2>
               <p id="onboarding-subtitle" className="mt-3 text-m text-slate-600 text-center">
-                Ayo kenali lebih dalam diri kamu dengan membangun kebiasaan jurnaling siklus dan suasana hatimu.
+                Ayo kenali lebih dalam diri kamu dengan membangun kebiasaan jurnaling siklus dan suasana hatimu. <br />
+                Psstt.. kalo kamu gak tau apa itu haid,<br/>klik belum😉
               </p>
             </div>
 

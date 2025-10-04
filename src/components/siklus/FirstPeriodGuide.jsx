@@ -35,7 +35,7 @@ const GUIDE_SECTIONS = [
     id: "prep",
     title: "Persiapan apa yang bisa kamu lakukan?",
     description:
-      "Siapkan tas kecil berisi: tisu basah, pembalut, obat nyeri, dan celana dalam. Dan catat perkiraan tanggal haidmu biar nggak kaget.",
+      "Siapkan tas kecil berisi: tisu basah, pembalut, obat nyeri, dan celana dalam. Nanti kalau sudah haid, pahami siklusmu biar nggak kaget.",
     accent: "from-amber-100 via-white to-green-50",
     visual: {
       imageSrc: "/image/hero-vaksin.png",
@@ -66,9 +66,7 @@ export default function FirstPeriodGuide({ onComplete }) {
   }, [hydrate]);
 
   useEffect(() => {
-    if (!containerRef.current) {
-      return undefined;
-    }
+    if (!containerRef.current) return;
 
     const guideSections = Array.from(
       containerRef.current.querySelectorAll("[data-guide-section]")
@@ -81,15 +79,10 @@ export default function FirstPeriodGuide({ onComplete }) {
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
         if (visible.length > 0) {
           const nextActive = visible[0].target.getAttribute("data-guide-section");
-          if (nextActive) {
-            setActiveSection(nextActive);
-          }
+          if (nextActive) setActiveSection(nextActive);
         }
       },
-      {
-        root: null,
-        threshold: [0.25, 0.5, 0.75],
-      }
+      { root: null, threshold: [0.25, 0.5, 0.75] }
     );
 
     guideSections.forEach((section) => observer.observe(section));
@@ -100,18 +93,13 @@ export default function FirstPeriodGuide({ onComplete }) {
         guideSections.forEach((section) => {
           ScrollTrigger.create({
             trigger: section,
-            start: "top 80%",
+            start: "top 85%",
             once: true,
             onEnter: () => {
               gsap.fromTo(
                 section,
-                { autoAlpha: 0, y: 24 },
-                {
-                  autoAlpha: 1,
-                  y: 0,
-                  duration: 0.6,
-                  ease: "power2.out",
-                }
+                { autoAlpha: 0, y: 12, willChange: "transform, opacity" },
+                { autoAlpha: 1, y: 0, duration: 0.5, ease: "power2.out", clearProps: "will-change" }
               );
             },
           });
@@ -122,10 +110,8 @@ export default function FirstPeriodGuide({ onComplete }) {
     return () => {
       guideSections.forEach((section) => observer.unobserve(section));
       observer.disconnect();
-      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
-      if (ctx) {
-        ctx.revert();
-      }
+      ScrollTrigger.getAll().forEach((t) => t.kill());
+      if (ctx) ctx.revert();
     };
   }, [settings.reducedMotion]);
 
@@ -150,14 +136,18 @@ export default function FirstPeriodGuide({ onComplete }) {
       </header>
 
       <div className="flex flex-col gap-6 md:flex-row">
-        <nav aria-label="Progress panduan" className="md:w-48">
-          <ol className="flex flex-row justify-between md:flex-col md:gap-4">
+        {/* Progress nav — diberi padding & overflow visible agar circle tidak kepotong */}
+        <nav
+          aria-label="Progress panduan"
+          className="overflow-visible px-2 md:w-48 md:px-0"
+        >
+          <ol className="flex flex-row gap-x-3 justify-between md:flex-col md:gap-4">
             {progressItems.map((item, index) => {
               const isActive = item.id === activeSection;
               return (
-                <li key={item.id} className="flex items-center gap-3">
+                <li key={item.id} className="flex min-w-0 items-center gap-3">
                   <span
-                    className={`flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-colors ${
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-semibold transition-colors ${
                       isActive
                         ? "border-pink-500 bg-pink-500 text-white"
                         : "border-pink-200 bg-white text-pink-400"
@@ -167,10 +157,11 @@ export default function FirstPeriodGuide({ onComplete }) {
                     {index + 1}
                   </span>
                   <span
-                    className={`text-xs font-medium ${
+                    className={`truncate text-xs font-medium ${
                       isActive ? "text-pink-600" : "text-slate-400"
                     }`}
                     aria-current={isActive ? "step" : undefined}
+                    title={item.title}
                   >
                     {item.title}
                   </span>
@@ -192,7 +183,7 @@ export default function FirstPeriodGuide({ onComplete }) {
               <div
                 className={`grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center bg-linear-to-r ${section.accent} rounded-2xl p-5`}
               >
-                <div className="relative h-28 w-28 overflow-hidden rounded-2xl bg-white/70 shadow-sm flex items-center justify-center">
+                <div className="relative flex h-28 w-28 items-center justify-center overflow-hidden rounded-2xl bg-white/70 shadow-sm">
                   <img
                     src={section.visual.imageSrc}
                     alt={section.visual.alt}
@@ -224,7 +215,7 @@ export default function FirstPeriodGuide({ onComplete }) {
         </div>
       </div>
 
-      <div className="flex flex-col items-center gap-3 rounded-3xl bg-white p-6 text-center shadow-sm">
+      <div className="flex flex-col items-center gap-3 rounded-3xl bg-white p-6 text-center">
         <button
           data-ripple="true"
           type="button"

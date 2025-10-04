@@ -1,7 +1,7 @@
 ﻿import React, { useMemo } from 'react';
 import useSiklusStore from '@/stores/useSiklusStore';
 
-const MONTHLY_TARGET = 20;
+const MONTHLY_TARGET = 30;
 
 function toLocalDateString(date) {
   const y = date.getFullYear();
@@ -42,7 +42,7 @@ export default function ConsistencyCard() {
 
   return (
     <article className="rounded-2xl border border-pink-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Konsistensi Pencatatan</h3>
+      <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Konsistensi Pencatatan</h3>
       <div className="mt-2 flex items-end justify-between">
         <p className="text-3xl font-semibold text-slate-800 dark:text-slate-100">{consistency}%</p>
         <p className="text-xs text-slate-500 dark:text-slate-400">Target bulanan: {MONTHLY_TARGET} hari</p>
