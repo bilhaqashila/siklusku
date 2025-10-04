@@ -232,7 +232,7 @@ export default function SikluskuPage() {
   const [showDailyNudge, setShowDailyNudge] = useState(false);
   const [lastNudgeShownDate, setLastNudgeShownDate] = useState(null);
 
-  // ✅ move tab state to top-level (no hooks inside render helpers)
+  // tabs
   const [activeTab, setActiveTab] = useState("dashboard");
 
   // ---- stores ----
@@ -241,6 +241,8 @@ export default function SikluskuPage() {
   const moodLogs = useSiklusStore((s) => s.moodLogs);
   const cycleSummary = useSiklusStore((s) => s.cycleSummary);
   const moodDistribution = useSiklusStore((s) => s.moodDistribution);
+  const achievements = useSiklusStore((s) => s.achievements ?? []); // used for conditional render
+
   const setOnboardingCompletedAction = useSiklusStore((s) => s.setOnboardingCompleted);
   const resetOnboardingDataAction = useSiklusStore((s) => s.resetOnboardingData);
 
@@ -529,37 +531,34 @@ export default function SikluskuPage() {
         </section>
 
         <section className="rounded-[28px] border border-pink-100 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-700/60 dark:bg-slate-900">
-          <div className="grid gap-6 md:grid-cols-[1.2fr_0.8fr] md:items-center">
-            <div className="space-y-4 text-left">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                Tips lembut untuk hari ini
-              </h2>
+          <div className="space-y-4 text-left">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+              Tips Spesial Untukmu :
+            </h2>
 
-              {showTips ? (
-                <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-200">
-                  {tips.map((tip) => (
-                    <li key={tip} className="flex items-start gap-3">
-                      <span
-                        className="mt-1 inline-flex h-2.5 w-2.5 shrink-0 rounded-full bg-pink-400 dark:bg-pink-300"
-                        aria-hidden="true"
-                      />
-                      <span>{tip}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Masukkan data haid terakhirmu dan kami akan menyiapkan panduan harian yang cocok
-                  untukmu.
-                </p>
-              )}
+            {showTips ? (
+              <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-200">
+                {tips.map((tip) => (
+                  <li key={tip} className="flex items-start gap-3">
+                    <span
+                      className="mt-1 inline-flex h-2.5 w-2.5 shrink-0 rounded-full bg-pink-400 dark:bg-pink-300"
+                      aria-hidden="true"
+                    />
+                    <span>{tip}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Catat mood kamu disini setiap hari, seperti sebuah diari khusus untuk suasana hatimu.
+              </p>
+            )}
 
-              {showPSA ? (
-                <div className={`mt-4 rounded-2xl border px-4 py-3 text-sm font-medium ${psaClass}`}>
-                  {psaMessage}
-                </div>
-              ) : null}
-            </div>
+            {showPSA ? (
+              <div className={`mt-4 rounded-2xl border px-4 py-3 text-sm font-medium ${psaClass}`}>
+                {psaMessage}
+              </div>
+            ) : null}
           </div>
         </section>
       </div>
@@ -568,6 +567,9 @@ export default function SikluskuPage() {
 
   // ---- dashboard area with tabs (NO hooks here) ----
   function renderDashboard() {
+    const hasUpcoming = Array.isArray(upcomingPeriods) && upcomingPeriods.length > 0;
+    const hasAchievements = Array.isArray(achievements) && achievements.length > 0;
+
     return (
       <div className="space-y-8">
         {showDailyNudge ? (
@@ -580,24 +582,8 @@ export default function SikluskuPage() {
               <div className="space-y-1">
                 <h3 className="text-base font-semibold">Mau catat mood hari ini?</h3>
                 <p className="text-sm text-amber-800/80 dark:text-amber-100/80">
-                  Jam sudah menunjukkan malam. Catat moodmu supaya pola emosimu tetap lengkap.
+                  Kamu belum mencatat moodmu hari ini. Apa yang kamu rasakan?
                 </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={handleNudgeLogNow}
-                  className="rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500"
-                >
-                  Catat mood sekarang
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNudgeDismiss}
-                  className="rounded-full border border-amber-200 px-4 py-2 text-sm font-medium text-amber-700 transition hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500 dark:border-amber-500/40 dark:text-amber-100"
-                >
-                  Nanti
-                </button>
               </div>
             </div>
           </section>
@@ -611,41 +597,20 @@ export default function SikluskuPage() {
             <TabsTrigger value="report">Laporan</TabsTrigger>
           </TabsList>
 
-          {/* DASHBOARD TAB */}
+          {/* ===================== DASHBOARD ===================== */}
           <TabsContent value="dashboard">
             <div className="space-y-8">
+              {/* 1) Consistency */}
               <section className="grid gap-4 md:grid-cols-1">
                 <ConsistencyCard />
               </section>
 
-              <section className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <MoodDistributionCard />
-                <div className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              {/* 2) Upcoming Periods (only if has data) */}
+              {hasUpcoming ? (
+                <section className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                   <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-                    Tren panjang siklus
+                    Periode berikutnya
                   </h3>
-                  <CycleTrendChart points={cycleTrendPoints} />
-                </div>
-              </section>
-
-              <section className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-                <MoodPatternCard />
-                <CycleLengthCard />
-              </section>
-
-              <section className="mb-6">
-                <AchievementsCard />
-              </section>
-
-              <div ref={moodSectionRef}>
-                <MoodLogger />
-              </div>
-
-              <section className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-                  Periode berikutnya
-                </h3>
-                {upcomingPeriods.length ? (
                   <ul className="mt-3 space-y-2 text-sm text-slate-600">
                     {upcomingPeriods.map((isoDate) => {
                       const displayDate = formatDisplayDate(isoDate) || isoDate;
@@ -660,30 +625,45 @@ export default function SikluskuPage() {
                       );
                     })}
                   </ul>
-                ) : (
-                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                    Lengkapi data onboarding untuk dapat prediksi periode berikutnya.
-                  </p>
-                )}
+                </section>
+              ) : null}
+
+              {/* 3) Mood Logger */}
+              <div ref={moodSectionRef}>
+                <MoodLogger />
+              </div>
+
+              {/* 4) Mood Distribution */}
+              <section className="grid grid-cols-1">
+                <MoodDistributionCard />
               </section>
+
+              {/* 5) Achievements (only if exists) */}
+              {hasAchievements ? (
+                <section className="mb-6">
+                  <AchievementsCard />
+                </section>
+              ) : null}
             </div>
           </TabsContent>
 
-          {/* REPORT TAB */}
+          {/* ====================== REPORT ======================= */}
           <TabsContent value="report">
             <div className="space-y-8">
-              <section className="grid gap-6 lg:grid-cols-2">
-                <MoodDistributionCard />
+              {/* 1) Mood Pattern (full width) */}
+              <section className="grid grid-cols-1">
+                <MoodPatternCard />
+              </section>
+
+              {/* 2) Cycle Trend + Summary */}
+              <section className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                   <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
                     Tren panjang siklus
                   </h3>
                   <CycleTrendChart points={cycleTrendPoints} />
                 </div>
-              </section>
 
-              <section className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-                <MoodPatternCard />
                 <div className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                   <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
                     Ringkasan cepat
@@ -711,6 +691,7 @@ export default function SikluskuPage() {
                 </div>
               </section>
 
+              {/* 3) Export Summary */}
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                 <div>
                   <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
