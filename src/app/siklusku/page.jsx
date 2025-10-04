@@ -69,7 +69,7 @@ const MOOD_META = MOOD_OPTIONS.reduce((acc, option) => {
 const PHASE_ART = {
   menstruation: {
     imageAlt: "Ilustrasi remaja minum teh hangat untuk fase menstruasi",
-    imageSrc: "/images/phase-menstruation.png",
+    imageSrc: "/image/phase-menstruation.png",
     palette: { primary: "#fbcfe8", secondary: "#f9a8d4", accent: "#fde4f2", highlight: "#f8b4d9", icon: "#db2777" },
     gradient: "from-rose-100 via-white to-rose-50",
     gradientDark: "dark:from-rose-950 dark:via-slate-950 dark:to-slate-900",
@@ -82,7 +82,7 @@ const PHASE_ART = {
   },
   follicular: {
     imageAlt: "Ilustrasi remaja membawa bunga",
-    imageSrc: "/images/phase-follicular.png",
+    imageSrc: "/image/phase-follicular.png",
     palette: { primary: "#bbf7d0", secondary: "#86efac", accent: "#dcfce7", highlight: "#34d399", icon: "#047857" },
     gradient: "from-green-100 via-white to-emerald-50",
     gradientDark: "dark:from-emerald-950 dark:via-slate-950 dark:to-slate-900",
@@ -95,7 +95,7 @@ const PHASE_ART = {
   },
   ovulation: {
     imageAlt: "Ilustrasi remaja dengan bunga bermekaran",
-    imageSrc: "/images/phase-ovulation.png",
+    imageSrc: "/image/phase-ovulation.png",
     palette: { primary: "#fef3c7", secondary: "#fde68a", accent: "#fffbeb", highlight: "#facc15", icon: "#b45309" },
     gradient: "from-amber-100 via-white to-yellow-50",
     gradientDark: "dark:from-amber-950 dark:via-slate-950 dark:to-slate-900",
@@ -109,7 +109,7 @@ const PHASE_ART = {
   },
   luteal: {
     imageAlt: "Ilustrasi remaja dengan bulan sabit",
-    imageSrc: "/images/phase-luteal.png",
+    imageSrc: "/image/phase-luteal.png",
     palette: { primary: "#c7d2fe", secondary: "#a5b4fc", accent: "#e0e7ff", highlight: "#6366f1", icon: "#4338ca" },
     gradient: "from-indigo-100 via-white to-slate-50",
     gradientDark: "dark:from-indigo-950 dark:via-slate-950 dark:to-slate-900",
@@ -121,8 +121,8 @@ const PHASE_ART = {
     tips: ["Mungkin kamu merasa lebih lelah atau sensitif dari biasanya. Perbanyak istirahat dan merawat diri."],
   },
   unknown: {
-    imageAlt: "Ilustrasi remaja menunjuk kalender",
-    imageSrc: "/images/phase-unknown.png",
+    imageAlt: "Ilustrasi remaja muda",
+    imageSrc: "/image/phase-unknown.png",
     palette: { primary: "#e2e8f0", secondary: "#cbd5f5", accent: "#f1f5f9", highlight: "#94a3b8", icon: "#475569" },
     gradient: "from-slate-100 via-white to-slate-50",
     gradientDark: "dark:from-slate-900 dark:via-slate-950 dark:to-slate-900",
@@ -142,35 +142,35 @@ const PLACEHOLDER_COPY = {
     message:
       "Kami sedang memuat data onboarding supaya pengalamanmu tetap personal dan aman di perangkat ini.",
     showPulse: true,
-    imageSrc: "/images/placeholder-loading.png",
+    imageSrc: "/image/placeholder-loading.png",
     imageAlt: "Ilustrasi pengisian data sedang dimuat",
   },
   gate: {
     title: "Yuk mulai kenalan",
     message: "Pilih sudah atau belum haid untuk menentukan langkah berikutnya.",
     showPulse: false,
-    imageSrc: "/images/placeholder-gate.png",
+    imageSrc: "/image/placeholder-gate.png",
     imageAlt: "Ilustrasi pilihan sudah atau belum haid",
   },
   guide: {
-    title: "Pelajari tubuhmu dengan tenang",
-    message: "Scroll panduan pertama haid, kamu bisa kembali kapan saja.",
+    title: "Mengenal Menstruasi Pertamamu",
+    message: "Yuk cek, kamu udah tau semua info tentang haid di bawah ini atau belum?",
     showPulse: false,
-    imageSrc: "/images/placeholder-guide.png",
+    imageSrc: "/image/placeholder-guide.png",
     imageAlt: "Ilustrasi panduan pertama haid",
   },
   form: {
     title: "Isi data siklusmu",
     message: "Catat tanggal haid, panjang siklus, dan tujuan supaya insight lebih akurat.",
     showPulse: false,
-    imageSrc: "/images/placeholder-form.png",
+    imageSrc: "/image/placeholder-form.png",
     imageAlt: "Ilustrasi formulir siklus",
   },
 };
 
 function OnboardingPlaceholder({ state }) {
   const copy = PLACEHOLDER_COPY[state] || PLACEHOLDER_COPY.loading;
-  const src = copy.imageSrc || "/images/placeholder-generic.png";
+  const src = copy.imageSrc || "/image/placeholder-form.png";
   const alt = copy.imageAlt || copy.title;
   return (
     <section

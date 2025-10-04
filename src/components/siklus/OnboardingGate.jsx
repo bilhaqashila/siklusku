@@ -128,7 +128,7 @@ export default function OnboardingGate({ open, onBelum, onSudah, reducedMotion =
           <div className="space-y-5 text-center sm:text-left">
             <div className="mx-auto h-24 w-48 sm:hidden">
               <img
-                src="/images/onboarding-desktop.png"
+                src="/image/placeholder-gate.png"
                 alt="Kartu sambutan Siklusku"
                 className="h-full w-full object-contain"
               />
@@ -204,7 +204,7 @@ export default function OnboardingGate({ open, onBelum, onSudah, reducedMotion =
                 aria-hidden="true"
               />
               <img
-                src="/images/onboarding-desktop.png"
+                src="/image/placeholder-gate.png"
                 alt="Ilustrasi remaja menunjuk kalender menstruasi"
                 className="relative z-10 h-full w-full object-contain"
               />
