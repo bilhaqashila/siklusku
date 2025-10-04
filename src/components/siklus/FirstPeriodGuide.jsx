@@ -5,7 +5,7 @@ import AbstractIllustration from "./AbstractIllustration";
 import SparklesIcon from "lucide-react/dist/esm/icons/sparkles";
 import BookOpenIcon from "lucide-react/dist/esm/icons/book-open";
 import CalendarIcon from "lucide-react/dist/esm/icons/calendar";
-import HeartHandshakeIcon from "lucide-react/dist/esm/icons/handshake";
+import HeartIcon from "lucide-react/dist/esm/icons/heart";
 import { gsap } from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import useSettingsStore from "@/stores/useSettingsStore";
