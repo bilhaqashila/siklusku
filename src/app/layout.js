@@ -10,6 +10,8 @@ const inter = Inter({
 export const metadata = {
   title: "RISA - Remaja Indonesia SehAt",
   description: "Dibuat oleh kelompok Sulianti Saroso",
+  icons: {
+    icon: "/favicon.ico",}
 };
 
 export default function RootLayout({ children }) {
