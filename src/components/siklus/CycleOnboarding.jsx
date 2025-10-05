@@ -53,8 +53,6 @@ function UnifiedStep({ values, errors, onChange }) {
           Tanggal haid terakhirmu
         </legend>
 
-        {/* Removed the helper text & any simple-input toggle */}
-
         <CalendarRange
           value={rangeValue}
           onChange={handleRangeChange}
@@ -129,15 +127,11 @@ function UnifiedStep({ values, errors, onChange }) {
   );
 }
 
-/** ============== Steps (single) ============== */
-const steps = [{ id: "unified", component: UnifiedStep, title: "Tanggal & Skala Nyeri" }];
-
 /** ============== Validation (dates + pain only) ============== */
 function getStepErrors(values) {
   const nextErrors = {};
   const today = todayIso();
 
-  // Dates
   if (!values.lastPeriodStart) {
     nextErrors.lastPeriodStart = "Isi tanggal mulai ya";
   } else if (values.lastPeriodStart > today) {
@@ -150,15 +144,10 @@ function getStepErrors(values) {
     nextErrors.lastPeriodEnd = "Tanggal tidak boleh di masa depan";
   }
 
-  if (
-    values.lastPeriodStart &&
-    values.lastPeriodEnd &&
-    values.lastPeriodEnd < values.lastPeriodStart
-  ) {
+  if (values.lastPeriodStart && values.lastPeriodEnd && values.lastPeriodEnd < values.lastPeriodStart) {
     nextErrors.lastPeriodEnd = "Tanggal selesai tidak boleh sebelum tanggal mulai";
   }
 
-  // Pain scale (1–10)
   const pain = Number(values.painScale);
   if (!Number.isFinite(pain) || pain < 1 || pain > 10) {
     nextErrors.painScale = "Pilih skala nyeri 1–10";
@@ -182,12 +171,10 @@ export default function CycleOnboarding({ onComplete }) {
   const stepHeadingRef = useRef(null);
   const reducedMotion = settings?.reducedMotion ?? false;
 
-  // Hydrate settings store (for reduced motion)
   useEffect(() => {
     hydrate?.();
   }, [hydrate]);
 
-  // Optional entrance anim
   useEffect(() => {
     if (!cardRef.current || reducedMotion) return;
     const ctx = gsap.context(() => {
@@ -200,22 +187,19 @@ export default function CycleOnboarding({ onComplete }) {
     return () => ctx?.revert();
   }, [reducedMotion]);
 
-  // Focus heading on mount
   useEffect(() => {
     stepHeadingRef.current?.focus();
   }, []);
 
-  // Current values (only the fields we need)
   const currentValues = useMemo(
     () => ({
       lastPeriodStart: onboardingData.lastPeriodStart ?? null,
       lastPeriodEnd: onboardingData.lastPeriodEnd ?? null,
-      painScale: onboardingData.painScale ?? 5, // default mid value
+      painScale: onboardingData.painScale ?? 5,
     }),
     [onboardingData]
   );
 
-  // Validate live (to control Next button disabled state)
   const stepValidation = useMemo(() => getStepErrors(currentValues), [currentValues]);
 
   function validateNow() {
@@ -226,9 +210,13 @@ export default function CycleOnboarding({ onComplete }) {
 
   function handleNext() {
     if (!validateNow()) return;
-
-    // Single-step: commit and finish
     commitOnboardingData?.();
+    setOnboardingCompleted?.(true);
+    onComplete?.();
+  }
+
+  function handleBack() {
+    // Mark onboarding as complete and go back to dashboard
     setOnboardingCompleted?.(true);
     onComplete?.();
   }
@@ -255,11 +243,9 @@ export default function CycleOnboarding({ onComplete }) {
 
   const liveErrorMessage = Object.values(errors).find(Boolean) || "";
   const errorMessageId = liveErrorMessage ? "onboarding-error-message" : undefined;
-  const StepComponent = steps[0].component;
 
   return (
     <div className="space-y-6" ref={cardRef}>
-      {/* Live region for errors */}
       {liveErrorMessage ? (
         <span id={errorMessageId} className="sr-only" aria-live="assertive">
           {liveErrorMessage}
@@ -270,20 +256,25 @@ export default function CycleOnboarding({ onComplete }) {
         <p className="text-xs font-semibold uppercase tracking-wide text-pink-500">
           Informasi Haid Terakhir
         </p>
-        <h3
-          ref={stepHeadingRef}
-          tabIndex={-1}
-          className="text-2xl font-semibold text-slate-800"
-        >
-          {steps[0].title}
+        <h3 ref={stepHeadingRef} tabIndex={-1} className="text-2xl font-semibold text-slate-800">
+          Tanggal & Skala Nyeri
         </h3>
       </header>
 
       <div className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm">
-        <StepComponent values={currentValues} errors={errors} onChange={handleChange} />
+        <UnifiedStep values={currentValues} errors={errors} onChange={handleChange} />
       </div>
 
-      <div className="flex items-center justify-end">
+      <div className="flex flex-col items-center justify-end gap-3 sm:flex-row sm:justify-end">
+        <button
+          type="button"
+          data-ripple="true"
+          onClick={handleBack}
+          className="rounded-full border border-pink-300 bg-white px-6 py-2 text-sm font-medium text-pink-600 hover:bg-pink-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-400 transition"
+        >
+          Batal
+        </button>
+
         <button
           type="button"
           data-ripple="true"

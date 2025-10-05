@@ -45,10 +45,10 @@ export default function MoodDistributionCard() {
       <div className="space-y-4">
         <div className="text-center">
           <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-            Mood bulananku
+            Mood bulananmu
           </h3>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Sebaran mood kamu dalam 30 hari terakhir
+            Ini sebaran perasaanmu dalam 30 hari terakhir
           </p>
         </div>
 

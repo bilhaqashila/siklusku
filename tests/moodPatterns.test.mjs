@@ -24,11 +24,11 @@ test("analyzeMoodPatternsByPhase returns empty structure when missing data", () 
 
 test("analyzeMoodPatternsByPhase aggregates counts and top moods per phase", () => {
   const moodLogs = [
-    { date: "2025-01-01", mood: "happy" },
-    { date: "2025-01-03", mood: "sad" },
-    { date: "2025-01-08", mood: "energized" },
-    { date: "2025-01-15", mood: "neutral" },
-    { date: "2025-01-20", mood: "tired" }
+    { date: "2025-01-01", mood: "Senang" },
+    { date: "2025-01-03", mood: "Sedih" },
+    { date: "2025-01-08", mood: "Bersemangat" },
+    { date: "2025-01-15", mood: "Biasa" },
+    { date: "2025-01-20", mood: "Lelah" }
   ];
 
   const result = analyzeMoodPatternsByPhase(moodLogs, BASE_SUMMARY);
@@ -37,24 +37,24 @@ test("analyzeMoodPatternsByPhase aggregates counts and top moods per phase", () 
 
   const menstruationSummary = result.summary[CYCLE_PHASES.MENSTRUATION];
   assert.strictEqual(menstruationSummary.total, 2);
-  assert.strictEqual(menstruationSummary.topMood, "happy");
+  assert.strictEqual(menstruationSummary.topMood, "Senang");
   assert.strictEqual(menstruationSummary.topCount, 1);
   assert.strictEqual(menstruationSummary.topPercentage, 50);
-  assert.strictEqual(result.topMoodByPhase[CYCLE_PHASES.MENSTRUATION], "happy");
+  assert.strictEqual(result.topMoodByPhase[CYCLE_PHASES.MENSTRUATION], "Senang");
   assert.deepEqual(
     menstruationSummary.moodCounts.map((item) => item.mood),
-    ["happy", "sad"]
+    ["Senang", "Sedih"]
   );
 
   const follicularSummary = result.summary[CYCLE_PHASES.FOLLICULAR];
   assert.strictEqual(follicularSummary.total, 1);
-  assert.strictEqual(follicularSummary.topMood, "energized");
+  assert.strictEqual(follicularSummary.topMood, "Bersemangat");
 
   const ovulationSummary = result.summary[CYCLE_PHASES.OVULATION];
   assert.strictEqual(ovulationSummary.total, 1);
-  assert.strictEqual(ovulationSummary.topMood, "neutral");
+  assert.strictEqual(ovulationSummary.topMood, "Biasa");
 
   const lutealSummary = result.summary[CYCLE_PHASES.LUTEAL];
   assert.strictEqual(lutealSummary.total, 1);
-  assert.strictEqual(lutealSummary.topMood, "tired");
+  assert.strictEqual(lutealSummary.topMood, "Lelah");
 });

@@ -343,7 +343,7 @@ const useSiklusStore = create((set, get) => ({
     });
   },
 
-  /* ======= NEW ACTION: addPeriod ======= */
+  /* ======= NEW ACTION: addPeriod (drop-in replacement) ======= */
   /**
    * Add a new period entry and recalculate summaries.
    * @param {{start:string, end?:string|null, painScale?:number}} payload
@@ -359,7 +359,9 @@ const useSiklusStore = create((set, get) => ({
     if (isFutureISO(sISO)) throw new Error("Tanggal mulai tidak boleh di masa depan.");
     if (eISO) {
       if (isFutureISO(eISO)) throw new Error("Tanggal selesai tidak boleh di masa depan.");
-      if (new Date(eISO) < new Date(sISO)) throw new Error("Tanggal selesai tidak boleh sebelum tanggal mulai.");
+      if (new Date(eISO) < new Date(sISO)) {
+        throw new Error("Tanggal selesai tidak boleh sebelum tanggal mulai.");
+      }
     }
 
     const state = get();
@@ -378,6 +380,7 @@ const useSiklusStore = create((set, get) => ({
       }
     }
 
+    // Build new entry
     const entry = { start: sISO, end: eISO || null };
     const pain = clampPain(painScale);
     if (pain) entry.painScale = pain;
@@ -391,14 +394,62 @@ const useSiklusStore = create((set, get) => ({
       lastPeriodEnd: eISO
     };
 
-    // Persist + recompute
+    // Persist onboarding data
     setLocalValue(STORAGE_KEYS.onboardingData, nextOnboarding);
 
-    const cycleSummary = buildSummaryFromOnboarding(nextOnboarding);
+    // Base summary from helper
+    const baseSummary = buildSummaryFromOnboarding(nextOnboarding);
 
-    // Aggregate pain for future charts — last 12 months
+    // ===== Recalculate averages from real history (if possible)
+    let averageCycleLength = baseSummary.averageCycleLength;
+    let averagePeriodLength = baseSummary.averagePeriodLength;
+
+    if (nextOnboarding.periodHistory?.length >= 2) {
+      const entries = nextOnboarding.periodHistory
+        .filter((p) => p.start)
+        .map((p) => ({
+          start: new Date(p.start + "T00:00:00"),
+          end: p.end ? new Date(p.end + "T00:00:00") : null,
+        }))
+        .sort((a, b) => a.start - b.start);
+
+      // Cycle lengths = gaps between starts
+      const cycleLens = [];
+      for (let i = 1; i < entries.length; i++) {
+        const days = Math.round((entries[i].start - entries[i - 1].start) / MS_PER_DAY);
+        // guard against noise: typical cycle ~ 15..60
+        if (days >= 15 && days <= 60) cycleLens.push(days);
+      }
+      if (cycleLens.length) {
+        averageCycleLength = Math.round(
+          cycleLens.reduce((a, b) => a + b, 0) / cycleLens.length
+        );
+      }
+
+      // Period lengths = (end - start) + 1
+      const periodLens = entries
+        .map((e) => (e.end ? Math.round((e.end - e.start) / MS_PER_DAY) + 1 : null))
+        .filter((v) => Number.isFinite(v) && v > 0 && v <= 15); // guard typical duration
+      if (periodLens.length) {
+        averagePeriodLength = Math.round(
+          periodLens.reduce((a, b) => a + b, 0) / periodLens.length
+        );
+      }
+    }
+
+    const cycleSummary = {
+      ...baseSummary,
+      averageCycleLength,
+      averagePeriodLength,
+    };
+
+    // ===== Mark onboarded (so UI never gates again)
+    setLocalValue(STORAGE_KEYS.onboardingCompleted, true);
+
+    // ===== Aggregate pain for future charts — last 12 months
     const twelveMonthsAgo = new Date();
     twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+
     const painPointsLast12M = nextHistory
       .filter((it) => it.painScale && new Date(it.start) >= twelveMonthsAgo)
       .map((it) => ({ date: it.start, pain: it.painScale }));
@@ -420,39 +471,54 @@ const useSiklusStore = create((set, get) => ({
       streak: state.streak,
       consistency: state.consistency,
       cycleSummary,
-      onboardingCompleted: state.onboardingCompleted,
+      onboardingCompleted: true, // reflect the flag for achievement logic
       onboardingData: nextOnboarding
     });
 
+    // ===== Commit to store
     set({
       onboardingData: nextOnboarding,
       cycleSummary,
       achievements,
       painPointsLast12M: painPointsLast12M,
-      painMonthlyLast12M: painMonthlyArr
+      painMonthlyLast12M: painMonthlyArr,
+      onboardingCompleted: true,
     });
   },
   /* ======= /NEW ACTION ======= */
 
+    /* ======= FIXED: addMoodLog ======= */
   addMoodLog: (log) => {
     const normalized = normalizeMoodEntry(log);
-    const stateSnapshot = get();
-    const moodLogs = [...stateSnapshot.moodLogs, normalized];
+    const state = get();
+    const todayKey = normalized.date;
+
+    // ---- Overwrite existing mood for the same date ----
+    const existing = Array.isArray(state.moodLogs) ? state.moodLogs : [];
+    const filtered = existing.filter((entry) => entry.date !== todayKey);
+    const moodLogs = [...filtered, normalized];
+
+    // Persist
     setLocalValue(STORAGE_KEYS.moodLogs, moodLogs);
 
-    // Recalculate streak, consistency, and mood distribution
+    // Recalculate derived stats
     const streak = calculateStreak(moodLogs);
     setLocalValue(STORAGE_KEYS.streak, streak);
     const consistency = calculateConsistency(moodLogs);
-    const moodDistribution = calculateMoodDistribution(moodLogs, { days: MOOD_DISTRIBUTION_WINDOW_DAYS });
-    const moodPatterns = analyzeMoodPatternsByPhase(moodLogs, stateSnapshot.cycleSummary);
+    const moodDistribution = calculateMoodDistribution(moodLogs, {
+      days: MOOD_DISTRIBUTION_WINDOW_DAYS,
+    });
+    const moodPatterns = analyzeMoodPatternsByPhase(
+      moodLogs,
+      state.cycleSummary
+    );
     const achievements = calculateAchievements({
       moodLogs,
       streak,
       consistency,
-      cycleSummary: stateSnapshot.cycleSummary,
-      onboardingCompleted: stateSnapshot.onboardingCompleted,
-      onboardingData: stateSnapshot.onboardingData
+      cycleSummary: state.cycleSummary,
+      onboardingCompleted: state.onboardingCompleted,
+      onboardingData: state.onboardingData,
     });
 
     set({
@@ -461,9 +527,11 @@ const useSiklusStore = create((set, get) => ({
       consistency,
       moodDistribution,
       moodPatterns,
-      achievements
+      achievements,
     });
   },
+  /* ======= /FIXED ======= */
+
 
   replaceMoodLogs: (logs) => {
     const normalized = logs.map((log) => normalizeMoodEntry(log));

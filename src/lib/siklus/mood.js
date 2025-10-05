@@ -1,14 +1,11 @@
 import { toDate } from "./cycleMath.js";
 
 const KNOWN_MOODS = [
-  "happy",
-  "energized",
-  "calm",
-  "neutral",
-  "tired",
-  "sad",
-  "anxious",
-  "crampy"
+  "Senang",
+  "Bersemangat",
+  "Biasa",
+  "Lelah",
+  "Sedih" 
 ];
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -16,7 +13,7 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 export function normalizeMoodEntry(entry = {}) {
   const rawDate = toDate(entry.date) || new Date();
   const isoDate = rawDate.toISOString().slice(0, 10);
-  const mood = KNOWN_MOODS.includes(entry.mood) ? entry.mood : "neutral";
+  const mood = KNOWN_MOODS.includes(entry.mood) ? entry.mood : "biasa";
   const noteValue = typeof entry.note === "string"
     ? entry.note.trim()
     : typeof entry.notes === "string"
@@ -87,7 +84,7 @@ export function groupMoodByDate(entries = []) {
 export function summarizeMoodTrend(entries = []) {
   if (!entries.length) {
     return {
-      dominantMood: "neutral",
+      dominantMood: "biasa",
       streak: 0
     };
   }

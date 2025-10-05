@@ -35,9 +35,9 @@ export default function LoveLetterModal({ open, onClose, reducedMotion }) {
     }
 
     setCloseEnabled(false);
-    setRemaining(5);
+    setRemaining(3);
 
-    const timeout = setTimeout(() => setCloseEnabled(true), 5000);
+    const timeout = setTimeout(() => setCloseEnabled(true), 3000);
     const interval = setInterval(() => {
       setRemaining((prev) => {
         if (prev <= 1) {

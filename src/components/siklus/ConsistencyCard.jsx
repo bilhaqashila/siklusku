@@ -45,7 +45,7 @@ export default function ConsistencyCard() {
       <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Konsistensi pencatatan</h3>
       <div className="mt-2 flex items-end justify-between">
         <p className="text-3xl font-semibold text-slate-800 dark:text-slate-100">{consistency}%</p>
-        <p className="text-xs text-slate-500 dark:text-slate-400">Target bulanan: {MONTHLY_TARGET} hari</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">Target: catat setiap hari selama {MONTHLY_TARGET} hari</p>
       </div>
       <div className="mt-3" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} aria-label={`Kemajuan menuju ${MONTHLY_TARGET} hari log bulan ini`}>
         <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-700">

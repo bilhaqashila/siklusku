@@ -3,52 +3,60 @@
 import { useMemo } from "react";
 
 const TAU = Math.PI * 2;
+const EPS = 1e-6;
+
+// Pastel palette you requested
+const MOOD_COLORS = {
+  senang:     "#bbf7d0", // green-100
+  biasa:   "#bfdbfe", // blue-200
+  sedih:       "#d8b4fe", // purple-300
+  lelah:     "#fbcfe8", // pink-200
+  bersemangat: "#fef3c7"  // amber-100
+};
 
 function buildArc(startAngle, endAngle, radius, center) {
   const startX = center + radius * Math.cos(startAngle);
   const startY = center + radius * Math.sin(startAngle);
-  const endX = center + radius * Math.cos(endAngle);
-  const endY = center + radius * Math.sin(endAngle);
+  const endX   = center + radius * Math.cos(endAngle);
+  const endY   = center + radius * Math.sin(endAngle);
   const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
+  // Sweep-flag = 1 (clockwise)
   return `M ${center} ${center} L ${startX} ${startY} A ${radius} ${radius} 0 ${largeArc} 1 ${endX} ${endY} Z`;
 }
 
-// Define colors that match MoodLogger
-const MOOD_COLORS = {
-  "happy": "#22c55e",    // Green
-  "neutral": "#3b82f6",  // Blue
-  "sad": "#8b5cf6",      // Purple
-  "tired": "#ec4899",    // Pink
-  "energized": "#f97316" // Orange
-};
-
 export default function MoodPieChart({ data, size = 220, colors }) {
-  const entries = useMemo(() => {
-    if (!data) {
-      return [];
-    }
-    const total = Object.values(data).reduce((sum, value) => sum + value, 0) || 1;
+  const { entries, total, singleSlice } = useMemo(() => {
+    if (!data) return { entries: [], total: 0, singleSlice: false };
+
+    // Only keep positive counts
+    const pairs = Object.entries(data).filter(([, v]) => v > 0);
+    const total = pairs.reduce((s, [, v]) => s + v, 0);
+
     let currentAngle = -Math.PI / 2;
-    return Object.entries(data).map(([mood, value], index) => {
-      const portion = value / total;
+    const items = pairs.map(([mood, value], i) => {
+      const portion = total > 0 ? value / total : 0;
       const startAngle = currentAngle;
-      const endAngle = currentAngle + portion * TAU;
+      const delta = portion * TAU;
+      const endAngle = currentAngle + delta;
       currentAngle = endAngle;
-      
-      // Use consistent colors from our defined MOOD_COLORS
-      return {
-        mood,
-        value,
-        startAngle,
-        endAngle,
-        color:
-          colors?.[mood] || MOOD_COLORS[mood] ||
-          ["#f9a8d4", "#f97316", "#facc15", "#22c55e", "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6"][index % 8]
-      };
+
+      const palette = colors || MOOD_COLORS;
+      const color =
+        palette?.[mood] ??
+        ["#fde2e4", "#bee1e6", "#cdeac0", "#ffdfba", "#e7c6ff", "#bde0fe", "#ffd6a5", "#b9fbc0"][i % 8];
+
+      return { mood, value, startAngle, endAngle, color, portion };
     });
+
+    return {
+      entries: items,
+      total,
+      singleSlice: items.length === 1 && Math.abs(items[0].portion - 1) < EPS
+    };
   }, [data, colors]);
 
-  const radius = size / 2 - 10;
+  const center = size / 2;
+  const radius = center - 10;
 
   return (
     <figure className="flex flex-col items-center gap-4" aria-label="Sebaran mood 30 hari terakhir">
@@ -59,25 +67,39 @@ export default function MoodPieChart({ data, size = 220, colors }) {
         aria-labelledby="mood-chart-title mood-chart-desc"
         className="drop-shadow-sm"
       >
-        <title id="mood-chart-title">Mood distribution</title>
+        <title id="mood-chart-title">Sebaran Mood</title>
         <desc id="mood-chart-desc">
           Diagram lingkaran yang memperlihatkan frekuensi mood yang kamu catat.
         </desc>
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="#fdf2f8" />
-        {entries.map((entry) => (
-          <path
-            key={entry.mood}
-            d={buildArc(entry.startAngle, entry.endAngle, radius, size / 2)}
-            fill={entry.color}
+
+        {/* Background ring */}
+        <circle cx={center} cy={center} r={radius} fill="#fdf2f8" />
+
+        {/* Single slice = full circle fill */}
+        {singleSlice ? (
+          <circle
+            cx={center}
+            cy={center}
+            r={radius}
+            fill={entries[0].color}
           >
-            <title>
-              {entry.mood}: {entry.value}
-            </title>
-          </path>
-        ))}
+            <title>{entries[0].mood}: {entries[0].value} dari {total}</title>
+          </circle>
+        ) : (
+          entries.map((e) => (
+            <path
+              key={e.mood}
+              d={buildArc(e.startAngle, e.endAngle, radius, center)}
+              fill={e.color}
+            >
+              <title>{e.mood}: {e.value} dari {total}</title>
+            </path>
+          ))
+        )}
       </svg>
+
       <figcaption className="w-full text-center text-xs text-slate-500">
-        Mood yang lebih sering dicatat akan terlihat lebih besar.
+        Mood yang lebih sering kamu catat akan terlihat lebih besar.
       </figcaption>
     </figure>
   );

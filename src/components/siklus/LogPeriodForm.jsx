@@ -108,13 +108,6 @@ export default function LogPeriodForm({ open, onClose }) {
               Pilih rentang tanggal haid dan skala nyeri (1–10).
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => !submitting && onClose?.()}
-            className="rounded-full px-3 py-1 text-sm text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-          >
-            Tutup
-          </button>
         </header>
 
         <div className="space-y-6">

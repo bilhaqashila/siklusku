@@ -66,7 +66,7 @@ const MOOD_META = MOOD_OPTIONS.reduce((acc, option) => {
   return acc;
 }, {});
 
-// ---- Phase metadata (icons OK; images are PNGs) ----
+// ---- Phase metadata ----
 const PHASE_ART = {
   menstruation: {
     imageAlt: "Ilustrasi remaja minum teh hangat untuk fase menstruasi",
@@ -124,19 +124,25 @@ const PHASE_ART = {
   unknown: {
     imageAlt: "Ilustrasi remaja muda",
     imageSrc: "/image/phase-unknown.png",
-    palette: { primary: "#e2e8f0", secondary: "#cbd5f5", accent: "#f1f5f9", highlight: "#94a3b8", icon: "#475569" },
-    gradient: "from-slate-100 via-white to-slate-50",
-    gradientDark: "dark:from-slate-900 dark:via-slate-950 dark:to-slate-900",
-    badge: "bg-slate-200 text-slate-700",
-    badgeDark: "dark:bg-slate-800/70 dark:text-slate-200 dark:border dark:border-slate-700/60",
+    palette: {
+      primary: "#fef2f2",
+      secondary: "#fecaca",
+      accent: "#fee2e2",
+      highlight: "#f472b6",
+      icon: "#be185d",
+    },
+    gradient: "from-rose-50 via-white to-rose-100",
+    gradientDark: "dark:from-rose-900 dark:via-rose-950 dark:to-rose-900",
+    badge: "bg-rose-100 text-rose-700 border border-rose-200",
+    badgeDark: "dark:bg-rose-800/70 dark:text-rose-200 dark:border dark:border-rose-700/60",
     icon: Sparkles,
-    name: "Belum ada data",
+    name: "jurnal mood",
     description: "Data siklus lengkap bantu kami menyesuaikan tips khusus untukmu.",
     tips: [],
   },
 };
 
-// ---- Placeholder content (PNG) ----
+// ---- Placeholder copy ----
 const PLACEHOLDER_COPY = {
   loading: {
     title: "Menyiapkan ruangmu",
@@ -162,7 +168,8 @@ const PLACEHOLDER_COPY = {
   },
   form: {
     title: "Isi data siklusmu",
-    message: "Catat tanggal haid, panjang siklus, dan gejala haid kamu untuk mendapatkan laporan kesehatan reproduksi.",
+    message:
+      "Catat tanggal haid, panjang siklus, dan gejala haid kamu untuk mendapatkan laporan kesehatan reproduksi.",
     showPulse: false,
     imageSrc: "/image/placeholder-form.png",
     imageAlt: "Ilustrasi formulir siklus",
@@ -199,11 +206,8 @@ function OnboardingPlaceholder({ state }) {
         {copy.showPulse ? (
           <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
             <span className="relative flex h-3 w-3">
-              <span
-                className="absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75 motion-safe:animate-ping"
-                aria-hidden="true"
-              />
-              <span className="relative inline-flex h-3 w-3 rounded-full bg-pink-500" aria-hidden="true" />
+              <span className="absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75 motion-safe:animate-ping" />
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-pink-500" />
             </span>
             <span>Jangan tutup halaman ya, ini hanya sebentar.</span>
           </div>
@@ -237,8 +241,8 @@ export default function SikluskuPage() {
   // tabs
   const [activeTab, setActiveTab] = useState("dashboard");
 
-  // NEW: log form modal state
-  const [logFormOpen, setLogFormOpen] = useState(false); // <-- NEW
+  // log form modal
+  const [logFormOpen, setLogFormOpen] = useState(false);
 
   // ---- stores ----
   const onboardingCompleted = useSiklusStore((s) => s.onboardingCompleted);
@@ -246,7 +250,7 @@ export default function SikluskuPage() {
   const moodLogs = useSiklusStore((s) => s.moodLogs);
   const cycleSummary = useSiklusStore((s) => s.cycleSummary);
   const moodDistribution = useSiklusStore((s) => s.moodDistribution);
-  const achievements = useSiklusStore((s) => s.achievements ?? []); // used for conditional render
+  const achievements = useSiklusStore((s) => s.achievements ?? []);
 
   const setOnboardingCompletedAction = useSiklusStore((s) => s.setOnboardingCompleted);
   const resetOnboardingDataAction = useSiklusStore((s) => s.resetOnboardingData);
@@ -310,6 +314,11 @@ export default function SikluskuPage() {
     setFlow(onboardingCompleted ? "dashboard" : "gate");
     if (onboardingCompleted && !loveLetterShown) setLoveLetterOpen(true);
   }, [hydrated, onboardingCompleted, loveLetterShown]);
+
+  // Hard guard: keep tab on dashboard if onboarding not completed
+  useEffect(() => {
+    if (!onboardingCompleted) setActiveTab("dashboard");
+  }, [onboardingCompleted]);
 
   // ripple attach/cleanup
   useEffect(() => {
@@ -387,28 +396,20 @@ export default function SikluskuPage() {
   }, [onboardingData?.lastPeriodStart, onboardingData?.cycleLength]);
 
   const cycleInsight = useMemo(() => {
-  const hasData = Boolean(onboardingData.lastPeriodStart);
-
-  // ✅ Use computed summaries, ignore 'regularity'
-  const cycleLen = normalizeNumber(cycleSummary.averageCycleLength, 28);
-  const periodLen = normalizeNumber(cycleSummary.averagePeriodLength, 5);
-
-  const day = hasData ? cycleDay(new Date(), onboardingData.lastPeriodStart, cycleLen) : null;
-  const phaseKey = day ? calculatePhase(day, periodLen, cycleLen) : "unknown";
-
-  return { hasData, day, phaseKey, cycleLength: cycleLen, periodLength: periodLen };
-}, [onboardingData.lastPeriodStart, cycleSummary.averageCycleLength, cycleSummary.averagePeriodLength]);
-
+    const hasData = Boolean(onboardingData.lastPeriodStart);
+    const cycleLen = normalizeNumber(cycleSummary.averageCycleLength, 28);
+    const periodLen = normalizeNumber(cycleSummary.averagePeriodLength, 5);
+    const day = hasData ? cycleDay(new Date(), onboardingData.lastPeriodStart, cycleLen) : null;
+    const phaseKey = day ? calculatePhase(day, periodLen, cycleLen) : "unknown";
+    return { hasData, day, phaseKey, cycleLength: cycleLen, periodLength: periodLen };
+  }, [onboardingData.lastPeriodStart, cycleSummary]);
 
   // ---- handlers ----
   function handleNudgeLogNow() {
     setShowDailyNudge(false);
     const todayKey = getTodayKey(new Date());
     if (lastNudgeShownDate !== todayKey) setLastNudgeShownDate(todayKey);
-    moodSectionRef.current?.scrollIntoView({
-      behavior: prefersReducedMotion ? "auto" : "smooth",
-      block: "start",
-    });
+    moodSectionRef.current?.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "start" });
   }
 
   function handleNudgeDismiss() {
@@ -426,17 +427,14 @@ export default function SikluskuPage() {
   function resetOnboardingData() {
     resetOnboardingDataAction?.();
   }
-
   function setOnboardingCompleted(val = true) {
     setOnboardingCompletedAction?.(val);
   }
-
   function handleGuideComplete() {
     resetOnboardingData();
     setOnboardingCompleted(true);
     setLoveLetterOpen(true);
   }
-
   function handleFormComplete() {
     setOnboardingCompleted(true);
     setLoveLetterOpen(true);
@@ -445,20 +443,16 @@ export default function SikluskuPage() {
   // ---- UI sections ----
   function renderPhaseHero() {
     const phaseMeta = PHASE_ART[cycleInsight.phaseKey] || PHASE_ART.unknown;
+    const isUnknown = cycleInsight.phaseKey === "unknown";
     const tips = Array.isArray(phaseMeta.tips) ? phaseMeta.tips : [];
     const phaseName = phaseMeta.name;
     const showTips = tips.length > 0;
 
-    const headline = cycleInsight.day
-      ? `Hari ke-${cycleInsight.day} siklusmu`
-      : "Lengkapi data siklusmu untuk melihat insight pribadi.";
-
-    const subline = phaseName
-      ? `Kamu sedang di fase ${phaseName}`
-      : "Masukkan tanggal haid terakhirmu agar kami bisa memberi panduan harian.";
-
-    const description =
-      phaseMeta.description ?? "Data siklus lengkap bantu kami menyesuaikan tips khusus untukmu.";
+    const headline = isUnknown ? "Belum mulai haid? Gapapa!" : `Hari ke-${cycleInsight.day} siklusmu`;
+    const subline = isUnknown ? "" : `Kamu sedang di fase ${phaseName}`;
+    const description = isUnknown
+      ? "Kamu bisa mulai dari catat mood harianmu dulu.\nNanti kalau kamu udah haid, klik catat dan mulai jurnal siklus bulananmu!\nSampai saat itu, kamu tetap bisa jurnal mood harianmu kapan saja disini 💕"
+      : (phaseMeta.description ?? "Data siklus lengkap bantu kami menyesuaikan tips khusus untukmu.");
 
     const Icon = phaseMeta.icon;
     const fertilityEnabled = Array.isArray(goals) && goals.includes("fertility");
@@ -471,20 +465,14 @@ export default function SikluskuPage() {
     return (
       <div className="space-y-6">
         <section
-          className={`overflow-hidden rounded-[32px] border border-white/40 bg-gradient-to-r ${phaseMeta.gradient} ${
-            phaseMeta.gradientDark ?? ""
-          } p-6 shadow-sm sm:p-8 dark:border-white/10`}
+          className={`overflow-hidden rounded-[32px] border border-white/40 bg-gradient-to-r ${phaseMeta.gradient} ${phaseMeta.gradientDark ?? ""} p-6 shadow-sm sm:p-8 dark:border-white/10`}
         >
           <div className="grid gap-6 md:grid-cols-[1.15fr_auto] md:items-center">
             <div className="space-y-5">
-              <span
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-1 text-xs font-semibold uppercase tracking-wide ${phaseMeta.badge} ${
-                  phaseMeta.badgeDark ?? ""
-                }`}
-              >
+              <span className={`inline-flex items-center gap-2 rounded-full px-4 py-1 text-xs font-semibold uppercase tracking-wide ${phaseMeta.badge} ${phaseMeta.badgeDark ?? ""}`}>
                 <Icon className="h-4 w-4" aria-hidden="true" />
                 <span className="text-slate-900 dark:text-slate-100">
-                  {phaseName ?? "Belum ada data"}
+                  {isUnknown ? "jurnal mood" : phaseName}
                 </span>
               </span>
 
@@ -492,42 +480,42 @@ export default function SikluskuPage() {
                 <h1 className="text-3xl font-semibold text-slate-900 dark:text-slate-100 sm:text-[34px]">
                   {headline}
                 </h1>
-                <p className="text-sm text-slate-600 dark:text-slate-300">{subline}</p>
+                {subline ? <p className="text-sm text-slate-600 dark:text-slate-300">{subline}</p> : null}
               </div>
 
-              <p className="text-sm text-slate-600 dark:text-slate-300">{description}</p>
+              <p className="whitespace-pre-line text-sm text-slate-600 dark:text-slate-300">{description}</p>
 
-              <dl className="grid grid-cols-2 gap-4 text-left sm:max-w-sm">
-                <div>
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    Panjang siklus
-                  </dt>
-                  <dd className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                    {cycleInsight.cycleLength} hari
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                    Lama menstruasi
-                  </dt>
-                  <dd className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                    {cycleInsight.periodLength} hari
-                  </dd>
-                </div>
-              </dl>
+              {!isUnknown ? (
+                <dl className="grid grid-cols-2 gap-4 text-left sm:max-w-sm">
+                  <div>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Panjang siklus
+                    </dt>
+                    <dd className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                      {cycleInsight.cycleLength} hari
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Lama menstruasi
+                    </dt>
+                    <dd className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                      {cycleInsight.periodLength} hari
+                    </dd>
+                  </div>
+                </dl>
+              ) : null}
 
-              {/* Show onboarding button if no data yet */}
-              {!cycleInsight.day ? (
+              {isUnknown ? (
                 <button
                   type="button"
-                  className="inline-flex items-center justify-center rounded-full bg-pink-500 px-5 py-2 text-sm font-semibold text-white shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-600"
+                  className="inline-flex items-center justify-center rounded-full border border-pink-300 bg-white px-5 py-2 text-sm font-semibold text-gray-800 shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-400"
                   onClick={() => setFlow("form")}
                 >
-                  Isi data siklus sekarang
+                  Catat Siklusku 🩸
                 </button>
               ) : null}
 
-              {/* NEW: Log Period button when user already has data */}
               {onboardingCompleted && (cycleInsight.day || onboardingData?.lastPeriodStart) ? (
                 <div>
                   <button
@@ -536,7 +524,6 @@ export default function SikluskuPage() {
                     className="inline-flex items-center gap-2 rounded-full border border-pink-200 bg-white px-4 py-2 text-xs font-semibold text-pink-600 shadow-sm hover:bg-pink-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-600"
                     onClick={() => setLogFormOpen(true)}
                   >
-                    <span className="text-lg leading-none">➕</span>
                     Tambahkan Tanggal Haid
                   </button>
                 </div>
@@ -544,33 +531,21 @@ export default function SikluskuPage() {
             </div>
 
             <div className="relative hidden h-64 w-64 md:block">
-              <div
-                className="absolute inset-0 rounded-full bg-white/70 blur-3xl dark:bg-white/10"
-                aria-hidden="true"
-              />
-              <img
-                src={phaseMeta.imageSrc}
-                alt={phaseMeta.imageAlt}
-                className="relative z-10 h-full w-full object-contain"
-              />
+              <div className="absolute inset-0 rounded-full bg-white/70 blur-3xl dark:bg-white/10" aria-hidden="true" />
+              <img src={phaseMeta.imageSrc} alt={phaseMeta.imageAlt} className="relative z-10 h-full w-full object-contain" />
             </div>
           </div>
         </section>
 
         <section className="rounded-[28px] border border-pink-100 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-700/60 dark:bg-slate-900">
           <div className="space-y-4 text-left">
-            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-              Tips spesial untukmu:
-            </h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Tips spesial untukmu:</h2>
 
             {showTips ? (
               <ul className="space-y-3 text-sm text-slate-600 dark:text-slate-200">
                 {tips.map((tip) => (
                   <li key={tip} className="flex items-start gap-3">
-                    <span
-                      className="mt-1 inline-flex h-2.5 w-2.5 shrink-0 rounded-full bg-pink-400 dark:bg-pink-300"
-                      aria-hidden="true"
-                    />
+                    <span className="mt-1 inline-flex h-2.5 w-2.5 shrink-0 rounded-full bg-pink-400 dark:bg-pink-300" />
                     <span>{tip}</span>
                   </li>
                 ))}
@@ -582,9 +557,7 @@ export default function SikluskuPage() {
             )}
 
             {showPSA ? (
-              <div className={`mt-4 rounded-2xl border px-4 py-3 text-sm font-medium ${psaClass}`}>
-                {psaMessage}
-              </div>
+              <div className={`mt-4 rounded-2xl border px-4 py-3 text-sm font-medium ${psaClass}`}>{psaMessage}</div>
             ) : null}
           </div>
         </section>
@@ -596,6 +569,7 @@ export default function SikluskuPage() {
   function renderDashboard() {
     const hasUpcoming = Array.isArray(upcomingPeriods) && upcomingPeriods.length > 0;
     const hasAchievements = Array.isArray(achievements) && achievements.length > 0;
+    const showReportTab = onboardingCompleted;
 
     return (
       <div className="space-y-8">
@@ -618,160 +592,210 @@ export default function SikluskuPage() {
 
         {renderPhaseHero()}
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs
+          // If onboarding not completed, the Tabs will always show "dashboard"
+          value={onboardingCompleted ? activeTab : "dashboard"}
+          onValueChange={(val) => {
+            // Hard prevent selecting "report" until eligible
+            if (!onboardingCompleted && val === "report") return;
+            setActiveTab(val);
+          }}
+        >
           <TabsList>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="report">Laporan</TabsTrigger>
+            {showReportTab ? <TabsTrigger value="report">Laporan</TabsTrigger> : null}
           </TabsList>
 
           {/* ===================== DASHBOARD ===================== */}
           <TabsContent value="dashboard">
             <div className="space-y-8">
-              {/* 1) Consistency */}
+              {/* 1) Consistency + Upcoming (or placeholder) */}
               <section className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
                 <ConsistencyCard />
-              {hasUpcoming ? (
-                <section className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                  <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-                    Perkiraan tanggal haidmu berikutnya
-                  </h3>
-                  <ul className="mt-3 space-y-2 text-sm text-slate-600">
-                    {upcomingPeriods.map((isoDate) => {
-                      const displayDate = formatDisplayDate(isoDate) || isoDate;
-                      return (
-                        <li
-                          key={isoDate}
-                          className="flex items-center justify-between rounded-2xl bg-pink-50 px-4 py-3"
-                        >
-                          <span className="font-semibold items-center text-pink-600">{displayDate}</span>
-                        </li>
-                      );
-                    })}
-                  </ul> 
-                </section>
-              ) : null}
-                </section>
 
-              {/* 3) Mood Logger */}
+                {hasUpcoming ? (
+                  <section className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                    <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Perkiraan haid berikutnya</h3>
+                    <ul className="mt-3 space-y-2 text-sm text-slate-600">
+                      {upcomingPeriods.map((isoDate) => {
+                        const displayDate = formatDisplayDate(isoDate) || isoDate;
+                        return (
+                          <li
+                            key={isoDate}
+                            className="flex items-center justify-between rounded-2xl bg-pink-50 px-4 py-3"
+                          >
+                            <span className="items-center font-semibold text-pink-600">{displayDate}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </section>
+                ) : (
+                  <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                    <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Perkiraan haid berikutnya</h3>
+                    <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                      Kami akan menampilkan perkiraan tanggal haid setelah kamu menambahkan catatan
+                      haid kamu. Saat ini kamu bisa mulai dari catat mood harianmu dulu ya. 💕
+                    </p>
+                  </section>
+                )}
+              </section>
+
+              {/* 2) Mood Logger */}
               <div ref={moodSectionRef}>
                 <MoodLogger />
               </div>
 
-              {/* 4) Mood Distribution */}
+              {/* 3) Mood Distribution */}
               <section className="grid grid-cols-1">
                 <MoodDistributionCard />
               </section>
 
-              {/* 5) Achievements (only if exists) */}
+              {/* 4) Achievements */}
               {hasAchievements ? (
                 <section className="mb-6">
                   <AchievementsCard />
                 </section>
               ) : null}
+
+              {/* === Artikel Rekomendasi (inside dashboard) === */}
+              <section
+                id="recommendations"
+                className="rounded-[28px] border border-pink-100 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-700/60 dark:bg-slate-900"
+              >
+                <h3 className="mb-8 text-center text-xl font-bold text-gray-800 dark:text-slate-100">
+                  Rekomendasi bacaan untuk kamu
+                </h3>
+
+                <div className="grid grid-cols-1 gap-4 p-2 md:grid-cols-3 md:gap-4 lg:gap-6">
+                  {/* Card 1 */}
+                  <a
+                    href="/article-hiv.html"
+                    className="group block cursor-pointer rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition-all duration-300 hover:-translate-y-2 hover:text-pink-600 dark:border-slate-800 dark:bg-slate-900"
+                  >
+                    <div
+                      className="mb-2 h-48 w-full rounded-xl bg-cover bg-top"
+                      style={{ backgroundImage: "url(/image/article-image-1.png)" }}
+                      aria-hidden="true"
+                    />
+                    <span className="font-medium">HIV? Gak Usah Panik, Yuk Kenalan Dulu!</span>
+                    <p className="text-sm leading-relaxed text-gray-600 dark:text-slate-400">
+                      Kenalan sama HIV biar gak salah paham dan tetap bisa jaga diri.
+                    </p>
+                  </a>
+
+                  {/* Card 2 */}
+                  <a
+                    href="/article-seks.html"
+                    className="group block cursor-pointer rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition-all duration-300 hover:-translate-y-2 hover:text-pink-600 dark:border-slate-800 dark:bg-slate-900"
+                  >
+                    <div
+                      className="mb-2 h-48 w-full rounded-xl bg-cover bg-top"
+                      style={{ backgroundImage: "url(/image/article-image-2.png)" }}
+                      aria-hidden="true"
+                    />
+                    <span className="font-medium">
+                      Seks Itu Apa Sih? Biar Gak Salah Paham dan Bisa Jaga Diri!
+                    </span>
+                    <p className="text-sm leading-relaxed text-gray-600 dark:text-slate-400">
+                      Belajar soal seks biar gak salah langkah dan bisa jaga diri.
+                    </p>
+                  </a>
+
+                  {/* Card 3 */}
+                  <a
+                    href="/article-menstruasi.html"
+                    className="group block cursor-pointer rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition-all duration-300 hover:-translate-y-2 hover:text-pink-600 dark:border-slate-800 dark:bg-slate-900"
+                  >
+                    <div
+                      className="mb-2 h-48 w-full rounded-xl bg-cover bg-top"
+                      style={{ backgroundImage: "url(/image/article-image-3.png)" }}
+                      aria-hidden="true"
+                    />
+                    <span className="font-medium">
+                      Menstruasi Pertama: Kenapa Bisa Terjadi dan Gak Usah Takut!
+                    </span>
+                    <p className="text-sm leading-relaxed text-gray-600 dark:text-slate-400">
+                      Menstruasi pertama itu alami, yuk siapin diri biar gak panik.
+                    </p>
+                  </a>
+                </div>
+              </section>
             </div>
           </TabsContent>
 
           {/* ====================== REPORT ======================= */}
-          <TabsContent value="report">
-            <div className="space-y-8">
-              {/* 1) Mood Pattern (full width) */}
-              <section className="grid grid-cols-1">
-                <MoodPatternCard />
-              </section>
+          {showReportTab ? (
+            <TabsContent value="report">
+              <div className="space-y-8">
+                <section className="grid grid-cols-1">
+                  <MoodPatternCard />
+                </section>
 
-              {/* 2) Cycle Trend + Summary */}
-              <section className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                  <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-                    Tren panjang siklus
-                  </h3>
-                  <CycleTrendChart points={cycleTrendPoints} />
-                </div>
+                <section className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <div className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                    <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Tren panjang siklus</h3>
+                    <CycleTrendChart points={cycleTrendPoints} />
+                  </div>
 
-                <div className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                  <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-                    Ringkasan cepat
-                  </h3>
-                  <ul className="mt-4 space-y-3 text-sm text-slate-600">
-                    <li className="flex items-center justify-between rounded-2xl bg-pink-50 px-4 py-3">
-                      <span>Rata-rata siklus</span>
-                      <span className="font-semibold text-pink-600">
-                        {cycleSummary.averageCycleLength} hari
-                      </span>
-                    </li>
-                    <li className="flex items-center justify-between rounded-2xl bg-pink-50 px-4 py-3">
-                      <span>Rata-rata menstruasi</span>
-                      <span className="font-semibold text-pink-600">
-                        {cycleSummary.averagePeriodLength} hari
-                      </span>
-                    </li>
-                    <li className="flex items-center justify-between rounded-2xl bg-pink-50 px-4 py-3">
-                      <span>Mood dominan</span>
-                      <span className="font-semibold capitalize text-pink-600">
-                        {moodSummary.dominantMood}
-                      </span>
-                    </li>
-                  </ul>
-                </div>
-              </section>
+                  <div className="rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                    <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Ringkasan cepat</h3>
+                    <ul className="mt-4 space-y-3 text-sm text-slate-600">
+                      <li className="flex items-center justify-between rounded-2xl bg-pink-50 px-4 py-3">
+                        <span>Rata-rata siklus</span>
+                        <span className="font-semibold text-pink-600">{cycleSummary.averageCycleLength} hari</span>
+                      </li>
+                      <li className="flex items-center justify-between rounded-2xl bg-pink-50 px-4 py-3">
+                        <span>Rata-rata menstruasi</span>
+                        <span className="font-semibold text-pink-600">{cycleSummary.averagePeriodLength} hari</span>
+                      </li>
+                      <li className="flex items-center justify-between rounded-2xl bg-pink-50 px-4 py-3">
+                        <span>Mood dominan</span>
+                        <span className="capitalize font-semibold text-pink-600">{moodSummary.dominantMood}</span>
+                      </li>
+                    </ul>
+                  </div>
+                </section>
 
-              {/* 3) Export Summary */}
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-                    Unduh laporan
-                  </h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">
-                    Simpan sebagai PNG untuk dibaca kapan saja.
-                  </p>
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-pink-100 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Unduh laporan</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Simpan sebagai PNG untuk dibaca kapan saja.</p>
+                  </div>
+                  <ChartExportButton
+                    filename="siklusku-report.png"
+                    stats={{
+                      averageCycleLength: cycleSummary.averageCycleLength,
+                      averagePeriodLength: cycleSummary.averagePeriodLength,
+                      dominantMood: moodSummary.dominantMood,
+                      moodEntries: moodLogs.length,
+                    }}
+                    legend={moodLegend}
+                  />
                 </div>
-                <ChartExportButton
-                  filename="siklusku-report.png"
-                  stats={{
-                    averageCycleLength: cycleSummary.averageCycleLength,
-                    averagePeriodLength: cycleSummary.averagePeriodLength,
-                    dominantMood: moodSummary.dominantMood,
-                    moodEntries: moodLogs.length,
-                  }}
-                  legend={moodLegend}
-                />
               </div>
-            </div>
-          </TabsContent>
+            </TabsContent>
+          ) : null}
         </Tabs>
       </div>
     );
   }
 
   return (
-    <main
-      id="main-content"
-      tabIndex="-1"
-      role="main"
-      className="container mx-auto max-w-4xl space-y-8 px-4 py-10 dark:text-slate-100"
-    >
-      <LoveLetterModal
-        open={loveLetterOpen}
-        onClose={handleLoveLetterClose}
-        reducedMotion={prefersReducedMotion}
-      />
+    <main id="main-content" tabIndex="-1" role="main" className="container mx-auto max-w-4xl space-y-8 px-4 py-10 dark:text-slate-100">
+      <LoveLetterModal open={loveLetterOpen} onClose={handleLoveLetterClose} reducedMotion={prefersReducedMotion} />
 
       {showPlaceholder ? <OnboardingPlaceholder state={placeholderState} /> : null}
 
       {hydrated ? (
-        <OnboardingGate
-          open={flow === "gate"}
-          onBelum={() => setFlow("guide")}
-          onSudah={() => setFlow("form")}
-          reducedMotion={prefersReducedMotion}
-        />
+        <OnboardingGate open={flow === "gate"} onBelum={() => setFlow("guide")} onSudah={() => setFlow("form")} reducedMotion={prefersReducedMotion} />
       ) : null}
 
       {flow === "guide" ? <FirstPeriodGuide onComplete={handleGuideComplete} /> : null}
       {flow === "form" ? <CycleOnboarding onComplete={handleFormComplete} /> : null}
       {flow === "dashboard" ? renderDashboard() : null}
 
-      {/* NEW: Log Period Modal */}
+      {/* Log Period Modal */}
       <LogPeriodForm open={logFormOpen} onClose={() => setLogFormOpen(false)} />
     </main>
   );
