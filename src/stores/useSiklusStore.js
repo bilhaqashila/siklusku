@@ -31,20 +31,29 @@ function formatDateString(value) {
 }
 
 function sanitizePeriodEntry(entry) {
-  if (!entry) {
-    return null;
-  }
+  if (!entry) return null;
+
+  // local clamp to avoid order issues with other helpers
+  const clampPainValue = (p) => {
+    const n = Number.parseInt(p, 10);
+    if (!Number.isFinite(n)) return null;
+    return Math.min(10, Math.max(1, n));
+  };
+
   const start = formatDateString(entry.start || entry.date);
-  if (!start) {
-    return null;
-  }
+  if (!start) return null;
+
   const sanitized = { start };
   const end = formatDateString(entry.end);
-  if (end) {
-    sanitized.end = end;
-  }
+  if (end) sanitized.end = end;
+
+  // ✅ preserve painScale if provided
+  const pain = clampPainValue(entry.painScale);
+  if (pain) sanitized.painScale = pain;
+
   return sanitized;
 }
+
 
 function sanitizePeriodHistory(value) {
   if (!Array.isArray(value)) {
@@ -155,9 +164,38 @@ function buildSummaryFromOnboarding(data) {
   };
 }
 
+/* ======= NEW HELPERS (addPeriod support) ======= */
+function isFutureISO(iso) {
+  if (!iso) return false;
+  const d = new Date(iso + "T00:00:00");
+  const today = new Date();
+  const td = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  return d.getTime() > td.getTime();
+}
+
+function datesOverlap(aStart, aEnd, bStart, bEnd) {
+  const aS = new Date(aStart).getTime();
+  const aE = new Date((aEnd || aStart) + "T00:00:00").getTime();
+  const bS = new Date(bStart).getTime();
+  const bE = new Date((bEnd || bStart) + "T00:00:00").getTime();
+  return aS <= bE && bS <= aE;
+}
+
+function sortByStartAsc(list) {
+  return [...list].sort((x, y) => new Date(x.start) - new Date(y.start));
+}
+
+function clampPain(p) {
+  const n = Number.parseInt(p, 10);
+  if (!Number.isFinite(n)) return null;
+  return Math.min(10, Math.max(1, n));
+}
+/* ======= /NEW HELPERS ======= */
+
 function createEmptyMoodPatterns() {
   return analyzeMoodPatternsByPhase([], {});
 }
+
 const useSiklusStore = create((set, get) => ({
   hydrated: false,
   onboardingCompleted: DEFAULT_VALUES[STORAGE_KEYS.onboardingCompleted],
@@ -305,6 +343,97 @@ const useSiklusStore = create((set, get) => ({
     });
   },
 
+  /* ======= NEW ACTION: addPeriod ======= */
+  /**
+   * Add a new period entry and recalculate summaries.
+   * @param {{start:string, end?:string|null, painScale?:number}} payload
+   * Throws Error with message for validation failures.
+   */
+  addPeriod: (payload) => {
+    const { start, end = null, painScale = null } = payload || {};
+    const sISO = formatDateString(start);
+    const eISO = end ? formatDateString(end) : null;
+
+    // ---- Validation
+    if (!sISO) throw new Error("Tanggal mulai diperlukan.");
+    if (isFutureISO(sISO)) throw new Error("Tanggal mulai tidak boleh di masa depan.");
+    if (eISO) {
+      if (isFutureISO(eISO)) throw new Error("Tanggal selesai tidak boleh di masa depan.");
+      if (new Date(eISO) < new Date(sISO)) throw new Error("Tanggal selesai tidak boleh sebelum tanggal mulai.");
+    }
+
+    const state = get();
+    const current = state.onboardingData || {};
+    const existing = sanitizePeriodHistory(current.periodHistory);
+
+    // Duplicate start date?
+    if (existing.some((it) => it.start === sISO)) {
+      throw new Error("Sudah ada catatan dengan tanggal mulai tersebut.");
+    }
+
+    // Overlap check (treat open-end as 1-day)
+    for (const it of existing) {
+      if (datesOverlap(sISO, eISO, it.start, it.end || it.start)) {
+        throw new Error("Rentang tanggal tumpang tindih dengan catatan lain.");
+      }
+    }
+
+    const entry = { start: sISO, end: eISO || null };
+    const pain = clampPain(painScale);
+    if (pain) entry.painScale = pain;
+
+    const nextHistory = sortByStartAsc([...existing, entry]);
+
+    const nextOnboarding = {
+      ...current,
+      periodHistory: nextHistory,
+      lastPeriodStart: sISO,
+      lastPeriodEnd: eISO
+    };
+
+    // Persist + recompute
+    setLocalValue(STORAGE_KEYS.onboardingData, nextOnboarding);
+
+    const cycleSummary = buildSummaryFromOnboarding(nextOnboarding);
+
+    // Aggregate pain for future charts — last 12 months
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+    const painPointsLast12M = nextHistory
+      .filter((it) => it.painScale && new Date(it.start) >= twelveMonthsAgo)
+      .map((it) => ({ date: it.start, pain: it.painScale }));
+
+    const painMonthlyLast12M = painPointsLast12M.reduce((acc, p) => {
+      const d = new Date(p.date);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      acc[key] = acc[key] || { month: key, total: 0, count: 0 };
+      acc[key].total += p.pain;
+      acc[key].count += 1;
+      return acc;
+    }, {});
+    const painMonthlyArr = Object.values(painMonthlyLast12M)
+      .map((x) => ({ month: x.month, avgPain: Math.round((x.total / x.count) * 10) / 10 }))
+      .sort((a, b) => (a.month < b.month ? -1 : 1));
+
+    const achievements = calculateAchievements({
+      moodLogs: state.moodLogs,
+      streak: state.streak,
+      consistency: state.consistency,
+      cycleSummary,
+      onboardingCompleted: state.onboardingCompleted,
+      onboardingData: nextOnboarding
+    });
+
+    set({
+      onboardingData: nextOnboarding,
+      cycleSummary,
+      achievements,
+      painPointsLast12M: painPointsLast12M,
+      painMonthlyLast12M: painMonthlyArr
+    });
+  },
+  /* ======= /NEW ACTION ======= */
+
   addMoodLog: (log) => {
     const normalized = normalizeMoodEntry(log);
     const stateSnapshot = get();
@@ -385,4 +514,3 @@ const useSiklusStore = create((set, get) => ({
 }));
 
 export default useSiklusStore;
-

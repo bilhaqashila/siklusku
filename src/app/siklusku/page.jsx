@@ -15,6 +15,7 @@ import MoodPatternCard from "@/components/siklus/MoodPatternCard";
 import CycleLengthCard from "@/components/siklus/CycleLengthCard";
 import AchievementsCard from "@/components/siklus/AchievementsCard";
 import LoveLetterModal from "@/components/siklus/LoveLetterModal";
+import LogPeriodForm from "@/components/siklus/LogPeriodForm";
 
 import useSiklusStore from "@/stores/useSiklusStore";
 import useSettingsStore from "@/stores/useSettingsStore";
@@ -236,6 +237,9 @@ export default function SikluskuPage() {
   // tabs
   const [activeTab, setActiveTab] = useState("dashboard");
 
+  // NEW: log form modal state
+  const [logFormOpen, setLogFormOpen] = useState(false); // <-- NEW
+
   // ---- stores ----
   const onboardingCompleted = useSiklusStore((s) => s.onboardingCompleted);
   const onboardingData = useSiklusStore((s) => s.onboardingData);
@@ -383,14 +387,18 @@ export default function SikluskuPage() {
   }, [onboardingData?.lastPeriodStart, onboardingData?.cycleLength]);
 
   const cycleInsight = useMemo(() => {
-    const hasData = Boolean(onboardingData.lastPeriodStart);
-    const reg = onboardingData.regularity;
-    const safeCycle = reg === "not-sure" ? 28 : normalizeNumber(onboardingData.cycleLength, 28);
-    const safePeriod = reg === "not-sure" ? 5 : normalizeNumber(onboardingData.periodLength, 5);
-    const day = hasData ? cycleDay(new Date(), onboardingData.lastPeriodStart, safeCycle) : null;
-    const phaseKey = day ? calculatePhase(day, safePeriod, safeCycle) : "unknown";
-    return { hasData, day, phaseKey, cycleLength: safeCycle, periodLength: safePeriod };
-  }, [onboardingData]);
+  const hasData = Boolean(onboardingData.lastPeriodStart);
+
+  // ✅ Use computed summaries, ignore 'regularity'
+  const cycleLen = normalizeNumber(cycleSummary.averageCycleLength, 28);
+  const periodLen = normalizeNumber(cycleSummary.averagePeriodLength, 5);
+
+  const day = hasData ? cycleDay(new Date(), onboardingData.lastPeriodStart, cycleLen) : null;
+  const phaseKey = day ? calculatePhase(day, periodLen, cycleLen) : "unknown";
+
+  return { hasData, day, phaseKey, cycleLength: cycleLen, periodLength: periodLen };
+}, [onboardingData.lastPeriodStart, cycleSummary.averageCycleLength, cycleSummary.averagePeriodLength]);
+
 
   // ---- handlers ----
   function handleNudgeLogNow() {
@@ -508,6 +516,7 @@ export default function SikluskuPage() {
                 </div>
               </dl>
 
+              {/* Show onboarding button if no data yet */}
               {!cycleInsight.day ? (
                 <button
                   type="button"
@@ -516,6 +525,21 @@ export default function SikluskuPage() {
                 >
                   Isi data siklus sekarang
                 </button>
+              ) : null}
+
+              {/* NEW: Log Period button when user already has data */}
+              {onboardingCompleted && (cycleInsight.day || onboardingData?.lastPeriodStart) ? (
+                <div>
+                  <button
+                    type="button"
+                    data-ripple="true"
+                    className="inline-flex items-center gap-2 rounded-full border border-pink-200 bg-white px-4 py-2 text-xs font-semibold text-pink-600 shadow-sm hover:bg-pink-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-600"
+                    onClick={() => setLogFormOpen(true)}
+                  >
+                    <span className="text-lg leading-none">➕</span>
+                    Tambahkan Tanggal Haid
+                  </button>
+                </div>
               ) : null}
             </div>
 
@@ -553,7 +577,7 @@ export default function SikluskuPage() {
               </ul>
             ) : (
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Catat mood kamu disini setiap hari, seperti sebuah diari khusus untuk suasana hatimu.
+                Catat mood kamu disini setiap hari, seperti sebuah jurnal khusus untuk suasana hatimu.
               </p>
             )}
 
@@ -746,6 +770,9 @@ export default function SikluskuPage() {
       {flow === "guide" ? <FirstPeriodGuide onComplete={handleGuideComplete} /> : null}
       {flow === "form" ? <CycleOnboarding onComplete={handleFormComplete} /> : null}
       {flow === "dashboard" ? renderDashboard() : null}
+
+      {/* NEW: Log Period Modal */}
+      <LogPeriodForm open={logFormOpen} onClose={() => setLogFormOpen(false)} />
     </main>
   );
 }

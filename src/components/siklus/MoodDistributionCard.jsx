@@ -45,7 +45,7 @@ export default function MoodDistributionCard() {
       <div className="space-y-4">
         <div className="text-center">
           <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-            Mood Bulananku
+            Mood bulananku
           </h3>
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Sebaran mood kamu dalam 30 hari terakhir
@@ -74,9 +74,9 @@ export default function MoodDistributionCard() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center p-8 text-center">
-            <div className="mb-4 text-4xl">dY"S</div>
+            <div className="mb-4 text-4xl"> </div>
             <p className="text-slate-500 dark:text-slate-400">
-              Belum ada catatan mood. Catat mood harianmu untuk melihat distribusi.
+              Belum ada catatan mood bulan ini.
             </p>
           </div>
         )}
