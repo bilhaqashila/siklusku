@@ -30,6 +30,7 @@ const MOODS = [
 
 export default function DailyTracker() {
   const { addDailyLog } = useSiklusStore();
+  const onboardingCompleted = useSiklusStore((s) => s.onboardingCompleted);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
   const [selectedFlow, setSelectedFlow] = useState(null);
   const [selectedSymptoms, setSelectedSymptoms] = useState([]);
@@ -117,43 +118,47 @@ export default function DailyTracker() {
       </div>
 
       {/* Flow Level */}
-      <div className="space-y-3">
-        <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-          <Droplets className="w-4 h-4 text-pink-500" />
-          Banyaknya haid (opsional)
-        </label>
-        <div className="grid grid-cols-2 gap-2">
-          {FLOW_LEVELS.map((flow) => (
-            <button
-              key={flow.id}
-              type="button"
-              onClick={() => setSelectedFlow(flow.id)}
-              className={`p-3 rounded-xl border-2 transition-all text-center ${selectedFlow === flow.id ? `${flow.color} border-current` : 'border-gray-200 hover:border-pink-300'}`}
-            >
-              <div className="text-lg mb-1">{flow.emoji}</div>
-              <div className="text-xs font-medium">{flow.label}</div>
-            </button>
-          ))}
+      {onboardingCompleted ? (
+        <div className="space-y-3">
+          <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
+            <Droplets className="w-4 h-4 text-pink-500" />
+            Banyaknya haid (opsional)
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {FLOW_LEVELS.map((flow) => (
+              <button
+                key={flow.id}
+                type="button"
+                onClick={() => setSelectedFlow(flow.id)}
+                className={`p-3 rounded-xl border-2 transition-all text-center ${selectedFlow === flow.id ? `${flow.color} border-current` : 'border-gray-200 hover:border-pink-300'}`}
+              >
+                <div className="text-lg mb-1">{flow.emoji}</div>
+                <div className="text-xs font-medium">{flow.label}</div>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       {/* Symptoms */}
-      <div className="space-y-3">
-        <label className="text-sm font-medium text-slate-700">Gejala yang dirasakan (pilih yang sesuai)</label>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {SYMPTOMS.map((symptom) => (
-            <button
-              key={symptom.id}
-              type="button"
-              onClick={() => toggleSymptom(symptom.id)}
-              className={`p-3 rounded-xl border-2 transition-all text-center ${selectedSymptoms.includes(symptom.id) ? 'bg-pink-100 text-pink-700 border-pink-300' : 'border-gray-200 hover:border-pink-300'}`}
-            >
-              <div className="text-lg mb-1">{symptom.emoji}</div>
-              <div className="text-xs font-medium">{symptom.label}</div>
-            </button>
-          ))}
+      {onboardingCompleted ? (
+        <div className="space-y-3">
+          <label className="text-sm font-medium text-slate-700">Gejala yang dirasakan (pilih yang sesuai)</label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {SYMPTOMS.map((symptom) => (
+              <button
+                key={symptom.id}
+                type="button"
+                onClick={() => toggleSymptom(symptom.id)}
+                className={`p-3 rounded-xl border-2 transition-all text-center ${selectedSymptoms.includes(symptom.id) ? 'bg-pink-100 text-pink-700 border-pink-300' : 'border-gray-200 hover:border-pink-300'}`}
+              >
+                <div className="text-lg mb-1">{symptom.emoji}</div>
+                <div className="text-xs font-medium">{symptom.label}</div>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       {/* Story/Notes */}
       <div className="space-y-3">
