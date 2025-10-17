@@ -1,17 +1,68 @@
-"use client";
+'use client';
 
-import { create } from "zustand";
-import {
-  STORAGE_KEYS,
-  DEFAULT_VALUES,
-  getLocalValue,
-  setLocalValue
-} from "@/lib/siklus/localStore";
-import { calculateCycleSummary } from "@/lib/siklus/cycleMath";
-import { normalizeMoodEntry, calculateMoodDistribution } from "@/lib/siklus/mood";
-import { calculateStreak, calculateConsistency } from "@/lib/siklus/streak";
-import { analyzeMoodPatternsByPhase } from "@/lib/siklus/moodPatterns";
-import { calculateAchievements } from "@/lib/siklus/achievements";
+import { create } from 'zustand';
+import { STORAGE_KEYS, DEFAULT_VALUES, getLocalValue, setLocalValue } from '@/lib/siklus/localStore';
+import { calculateCycleSummary } from '@/lib/siklus/cycleMath';
+// ⛔ removed: import { normalizeMoodEntry, calculateMoodDistribution } from "@/lib/siklus/mood";
+import { calculateStreak, calculateConsistency } from '@/lib/siklus/streak';
+import { analyzeMoodPatternsByPhase } from '@/lib/siklus/moodPatterns';
+import { calculateAchievements } from '@/lib/siklus/achievements';
+
+/* =========================
+   Local mood helpers (replacing mood.js)
+   ========================= */
+const KNOWN_MOODS = ['happy', 'sad', 'angry', 'anxious', 'normal'];
+
+function normalizeDateYYYYMMDD(value) {
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function normalizeMoodKey(mood) {
+  if (!mood || typeof mood !== 'string') return null;
+  const key = mood.trim().toLowerCase();
+  return KNOWN_MOODS.includes(key) ? key : null;
+}
+
+/** Replacement for normalizeMoodEntry from mood.js */
+function normalizeMoodEntry(entry = {}) {
+  const date = normalizeDateYYYYMMDD(entry.date || new Date());
+  const moodKey = normalizeMoodKey(entry.mood) ?? 'normal';
+  const note = typeof entry.note === 'string' ? entry.note.trim() : '';
+  return {
+    ...entry,
+    date,
+    mood: moodKey,
+    note,
+  };
+}
+
+/**
+ * Replacement for calculateMoodDistribution from mood.js
+ * Counts mood frequencies within a moving window (default 30 days) using `date` field of entries.
+ */
+function calculateMoodDistribution(moodLogs = [], { days = 30 } = {}) {
+  if (!Array.isArray(moodLogs) || moodLogs.length === 0) return {};
+  const now = new Date();
+  const windowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  windowStart.setDate(windowStart.getDate() - (Number.isFinite(days) ? days : 30) + 1); // inclusive window
+
+  const counts = {};
+  for (const raw of moodLogs) {
+    const e = normalizeMoodEntry(raw);
+    if (!e.date) continue;
+    const d = new Date(e.date + 'T00:00:00');
+    if (d >= windowStart && d <= now) {
+      counts[e.mood] = (counts[e.mood] || 0) + 1;
+    }
+  }
+  return counts;
+}
+/* ========================= */
 
 const defaultOnboarding = DEFAULT_VALUES[STORAGE_KEYS.onboardingData];
 const defaultGoals = DEFAULT_VALUES[STORAGE_KEYS.goals];
@@ -25,8 +76,8 @@ function formatDateString(value) {
     return null;
   }
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
@@ -54,7 +105,6 @@ function sanitizePeriodEntry(entry) {
   return sanitized;
 }
 
-
 function sanitizePeriodHistory(value) {
   if (!Array.isArray(value)) {
     return [];
@@ -80,13 +130,7 @@ function toPositiveInteger(value, fallback) {
 
 function buildSummaryFromOnboarding(data) {
   const onboardingData = data || {};
-  const {
-    lastPeriodStart,
-    lastPeriodEnd,
-    cycleLength,
-    periodLength,
-    periodHistory
-  } = onboardingData;
+  const { lastPeriodStart, lastPeriodEnd, cycleLength, periodLength, periodHistory } = onboardingData;
 
   const recordedPeriods = sanitizePeriodHistory(periodHistory);
   const normalizedLastStart = formatDateString(lastPeriodStart);
@@ -98,7 +142,7 @@ function buildSummaryFromOnboarding(data) {
       if (normalizedLastEnd) {
         recordedPeriods[existingIndex] = {
           ...recordedPeriods[existingIndex],
-          end: normalizedLastEnd
+          end: normalizedLastEnd,
         };
       }
     } else {
@@ -147,7 +191,7 @@ function buildSummaryFromOnboarding(data) {
     return {
       start: entry.start,
       end: formatDateString(endDate),
-      predicted: Boolean(entry.predicted)
+      predicted: Boolean(entry.predicted),
     };
   });
 
@@ -160,14 +204,14 @@ function buildSummaryFromOnboarding(data) {
     averageCycleLength,
     averagePeriodLength,
     lastPeriodStart: normalizedLastStart || null,
-    lastPeriodEnd: normalizedLastEnd || null
+    lastPeriodEnd: normalizedLastEnd || null,
   };
 }
 
 /* ======= NEW HELPERS (addPeriod support) ======= */
 function isFutureISO(iso) {
   if (!iso) return false;
-  const d = new Date(iso + "T00:00:00");
+  const d = new Date(iso + 'T00:00:00');
   const today = new Date();
   const td = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   return d.getTime() > td.getTime();
@@ -175,9 +219,9 @@ function isFutureISO(iso) {
 
 function datesOverlap(aStart, aEnd, bStart, bEnd) {
   const aS = new Date(aStart).getTime();
-  const aE = new Date((aEnd || aStart) + "T00:00:00").getTime();
+  const aE = new Date((aEnd || aStart) + 'T00:00:00').getTime();
   const bS = new Date(bStart).getTime();
-  const bE = new Date((bEnd || bStart) + "T00:00:00").getTime();
+  const bE = new Date((bEnd || bStart) + 'T00:00:00').getTime();
   return aS <= bE && bS <= aE;
 }
 
@@ -203,7 +247,7 @@ const useSiklusStore = create((set, get) => ({
   moodLogs: DEFAULT_VALUES[STORAGE_KEYS.moodLogs],
   goals: [...defaultGoals],
   cycleSummary: buildSummaryFromOnboarding(defaultOnboarding),
-  activeView: "dashboard",
+  activeView: 'dashboard',
   loveLetterShown: DEFAULT_VALUES[STORAGE_KEYS.loveLetterShownOnce],
   streak: 0,
   consistency: 0,
@@ -226,7 +270,7 @@ const useSiklusStore = create((set, get) => ({
     const goals = storedGoals.length > 0 ? storedGoals : onboardingGoals;
     const cycleSummary = buildSummaryFromOnboarding(onboardingData);
     const loveLetterShown = getLocalValue(STORAGE_KEYS.loveLetterShownOnce);
-    
+
     // Calculate streak, consistency, and mood distribution
     const streak = calculateStreak(moodLogs);
     setLocalValue(STORAGE_KEYS.streak, streak);
@@ -239,8 +283,18 @@ const useSiklusStore = create((set, get) => ({
       consistency,
       cycleSummary,
       onboardingCompleted,
-      onboardingData
+      onboardingData,
     });
+
+    // Load daily logs
+    const dailyLogs = (() => {
+      try {
+        const saved = localStorage.getItem('risa:dailyLogs');
+        return saved ? JSON.parse(saved) : [];
+      } catch {
+        return [];
+      }
+    })();
 
     set({
       hydrated: true,
@@ -254,7 +308,8 @@ const useSiklusStore = create((set, get) => ({
       consistency,
       moodDistribution,
       moodPatterns,
-      achievements
+      achievements,
+      dailyLogs: Array.isArray(dailyLogs) ? dailyLogs : [],
     });
   },
 
@@ -270,7 +325,7 @@ const useSiklusStore = create((set, get) => ({
         consistency: state.consistency,
         cycleSummary: state.cycleSummary,
         onboardingCompleted: normalized,
-        onboardingData: state.onboardingData
+        onboardingData: state.onboardingData,
       });
       return { onboardingCompleted: normalized, achievements };
     });
@@ -279,12 +334,12 @@ const useSiklusStore = create((set, get) => ({
   updateOnboardingDraft: (partial) => {
     const current = get().onboardingData;
     const next = { ...current, ...partial };
-    if (Object.prototype.hasOwnProperty.call(partial, "goals")) {
+    if (Object.prototype.hasOwnProperty.call(partial, 'goals')) {
       next.goals = sanitizeGoals(partial.goals);
     }
     set({
       onboardingData: next,
-      cycleSummary: buildSummaryFromOnboarding(next)
+      cycleSummary: buildSummaryFromOnboarding(next),
     });
   },
 
@@ -303,14 +358,14 @@ const useSiklusStore = create((set, get) => ({
       consistency: stateSnapshot.consistency,
       cycleSummary,
       onboardingCompleted: stateSnapshot.onboardingCompleted,
-      onboardingData: normalizedData
+      onboardingData: normalizedData,
     });
 
     set({
       onboardingData: normalizedData,
       cycleSummary,
       goals,
-      achievements
+      achievements,
     });
   },
 
@@ -330,7 +385,7 @@ const useSiklusStore = create((set, get) => ({
         consistency: state.consistency,
         cycleSummary,
         onboardingCompleted: state.onboardingCompleted,
-        onboardingData: defaults
+        onboardingData: defaults,
       });
 
       return {
@@ -338,7 +393,7 @@ const useSiklusStore = create((set, get) => ({
         cycleSummary,
         goals: defaultGoalList,
         loveLetterShown: false,
-        achievements
+        achievements,
       };
     });
   },
@@ -355,12 +410,12 @@ const useSiklusStore = create((set, get) => ({
     const eISO = end ? formatDateString(end) : null;
 
     // ---- Validation
-    if (!sISO) throw new Error("Tanggal mulai diperlukan.");
-    if (isFutureISO(sISO)) throw new Error("Tanggal mulai tidak boleh di masa depan.");
+    if (!sISO) throw new Error('Tanggal mulai diperlukan.');
+    if (isFutureISO(sISO)) throw new Error('Tanggal mulai tidak boleh di masa depan.');
     if (eISO) {
-      if (isFutureISO(eISO)) throw new Error("Tanggal selesai tidak boleh di masa depan.");
+      if (isFutureISO(eISO)) throw new Error('Tanggal selesai tidak boleh di masa depan.');
       if (new Date(eISO) < new Date(sISO)) {
-        throw new Error("Tanggal selesai tidak boleh sebelum tanggal mulai.");
+        throw new Error('Tanggal selesai tidak boleh sebelum tanggal mulai.');
       }
     }
 
@@ -370,13 +425,13 @@ const useSiklusStore = create((set, get) => ({
 
     // Duplicate start date?
     if (existing.some((it) => it.start === sISO)) {
-      throw new Error("Sudah ada catatan dengan tanggal mulai tersebut.");
+      throw new Error('Sudah ada catatan dengan tanggal mulai tersebut.');
     }
 
     // Overlap check (treat open-end as 1-day)
     for (const it of existing) {
       if (datesOverlap(sISO, eISO, it.start, it.end || it.start)) {
-        throw new Error("Rentang tanggal tumpang tindih dengan catatan lain.");
+        throw new Error('Rentang tanggal tumpang tindih dengan catatan lain.');
       }
     }
 
@@ -391,7 +446,7 @@ const useSiklusStore = create((set, get) => ({
       ...current,
       periodHistory: nextHistory,
       lastPeriodStart: sISO,
-      lastPeriodEnd: eISO
+      lastPeriodEnd: eISO,
     };
 
     // Persist onboarding data
@@ -408,8 +463,8 @@ const useSiklusStore = create((set, get) => ({
       const entries = nextOnboarding.periodHistory
         .filter((p) => p.start)
         .map((p) => ({
-          start: new Date(p.start + "T00:00:00"),
-          end: p.end ? new Date(p.end + "T00:00:00") : null,
+          start: new Date(p.start + 'T00:00:00'),
+          end: p.end ? new Date(p.end + 'T00:00:00') : null,
         }))
         .sort((a, b) => a.start - b.start);
 
@@ -421,19 +476,13 @@ const useSiklusStore = create((set, get) => ({
         if (days >= 15 && days <= 60) cycleLens.push(days);
       }
       if (cycleLens.length) {
-        averageCycleLength = Math.round(
-          cycleLens.reduce((a, b) => a + b, 0) / cycleLens.length
-        );
+        averageCycleLength = Math.round(cycleLens.reduce((a, b) => a + b, 0) / cycleLens.length);
       }
 
       // Period lengths = (end - start) + 1
-      const periodLens = entries
-        .map((e) => (e.end ? Math.round((e.end - e.start) / MS_PER_DAY) + 1 : null))
-        .filter((v) => Number.isFinite(v) && v > 0 && v <= 15); // guard typical duration
+      const periodLens = entries.map((e) => (e.end ? Math.round((e.end - e.start) / MS_PER_DAY) + 1 : null)).filter((v) => Number.isFinite(v) && v > 0 && v <= 15); // guard typical duration
       if (periodLens.length) {
-        averagePeriodLength = Math.round(
-          periodLens.reduce((a, b) => a + b, 0) / periodLens.length
-        );
+        averagePeriodLength = Math.round(periodLens.reduce((a, b) => a + b, 0) / periodLens.length);
       }
     }
 
@@ -450,13 +499,11 @@ const useSiklusStore = create((set, get) => ({
     const twelveMonthsAgo = new Date();
     twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
 
-    const painPointsLast12M = nextHistory
-      .filter((it) => it.painScale && new Date(it.start) >= twelveMonthsAgo)
-      .map((it) => ({ date: it.start, pain: it.painScale }));
+    const painPointsLast12M = nextHistory.filter((it) => it.painScale && new Date(it.start) >= twelveMonthsAgo).map((it) => ({ date: it.start, pain: it.painScale }));
 
     const painMonthlyLast12M = painPointsLast12M.reduce((acc, p) => {
       const d = new Date(p.date);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       acc[key] = acc[key] || { month: key, total: 0, count: 0 };
       acc[key].total += p.pain;
       acc[key].count += 1;
@@ -472,7 +519,7 @@ const useSiklusStore = create((set, get) => ({
       consistency: state.consistency,
       cycleSummary,
       onboardingCompleted: true, // reflect the flag for achievement logic
-      onboardingData: nextOnboarding
+      onboardingData: nextOnboarding,
     });
 
     // ===== Commit to store
@@ -487,7 +534,7 @@ const useSiklusStore = create((set, get) => ({
   },
   /* ======= /NEW ACTION ======= */
 
-    /* ======= FIXED: addMoodLog ======= */
+  /* ======= FIXED: addMoodLog ======= */
   addMoodLog: (log) => {
     const normalized = normalizeMoodEntry(log);
     const state = get();
@@ -508,10 +555,7 @@ const useSiklusStore = create((set, get) => ({
     const moodDistribution = calculateMoodDistribution(moodLogs, {
       days: MOOD_DISTRIBUTION_WINDOW_DAYS,
     });
-    const moodPatterns = analyzeMoodPatternsByPhase(
-      moodLogs,
-      state.cycleSummary
-    );
+    const moodPatterns = analyzeMoodPatternsByPhase(moodLogs, state.cycleSummary);
     const achievements = calculateAchievements({
       moodLogs,
       streak,
@@ -532,7 +576,6 @@ const useSiklusStore = create((set, get) => ({
   },
   /* ======= /FIXED ======= */
 
-
   replaceMoodLogs: (logs) => {
     const normalized = logs.map((log) => normalizeMoodEntry(log));
     setLocalValue(STORAGE_KEYS.moodLogs, normalized);
@@ -551,7 +594,7 @@ const useSiklusStore = create((set, get) => ({
       consistency,
       cycleSummary: stateSnapshot.cycleSummary,
       onboardingCompleted: stateSnapshot.onboardingCompleted,
-      onboardingData: stateSnapshot.onboardingData
+      onboardingData: stateSnapshot.onboardingData,
     });
 
     set({
@@ -560,7 +603,7 @@ const useSiklusStore = create((set, get) => ({
       consistency,
       moodDistribution,
       moodPatterns,
-      achievements
+      achievements,
     });
   },
 
@@ -578,7 +621,49 @@ const useSiklusStore = create((set, get) => ({
   resetLoveLetter: () => {
     setLocalValue(STORAGE_KEYS.loveLetterShownOnce, false);
     set({ loveLetterShown: false });
-  }
+  },
+
+  // Daily tracking functionality
+  dailyLogs: [],
+
+  addDailyLog: (logData) => {
+    const state = get();
+    const existingIndex = state.dailyLogs.findIndex((log) => log.date === logData.date);
+
+    let updatedLogs;
+    if (existingIndex >= 0) {
+      // Update existing log
+      updatedLogs = [...state.dailyLogs];
+      updatedLogs[existingIndex] = { ...updatedLogs[existingIndex], ...logData };
+    } else {
+      // Add new log
+      updatedLogs = [...state.dailyLogs, logData];
+    }
+
+    // Sort by date (newest first)
+    updatedLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    try {
+      localStorage.setItem('risa:dailyLogs', JSON.stringify(updatedLogs));
+    } catch (error) {
+      console.warn('Failed to save daily logs:', error);
+    }
+
+    set({ dailyLogs: updatedLogs });
+  },
+
+  loadDailyLogs: () => {
+    try {
+      const saved = localStorage.getItem('risa:dailyLogs');
+      if (saved) {
+        const logs = JSON.parse(saved);
+        set({ dailyLogs: Array.isArray(logs) ? logs : [] });
+      }
+    } catch (error) {
+      console.warn('Failed to load daily logs:', error);
+      set({ dailyLogs: [] });
+    }
+  },
 }));
 
 export default useSiklusStore;
